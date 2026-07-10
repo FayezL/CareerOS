@@ -98,7 +98,7 @@ tests); real Clerk keys for an actual signed-in UI flow.
 
 ## Phase 2 — Pipeline & Kanban
 
-**Status:** Planned
+**Status:** Done (code) — pending live-DB/CI confirm + real keys for credential-gated features (Firebase/Stripe/LLM, which run in demo/mock mode without keys)
 
 **Goal:** Turn the flat application list into a living, configurable pipeline board with persisted ordering and full stage history.
 
@@ -124,7 +124,7 @@ tests); real Clerk keys for an actual signed-in UI flow.
 
 ## Phase 3 — People & Process
 
-**Status:** Planned
+**Status:** Done (code) — pending live-DB/CI confirm + real keys for credential-gated features (Firebase/Stripe/LLM, which run in demo/mock mode without keys)
 
 **Goal:** Capture the humans, conversations, and scheduled events around each application so full context lives in one place.
 
@@ -150,7 +150,7 @@ tests); real Clerk keys for an actual signed-in UI flow.
 
 ## Phase 4 — Documents & Storage
 
-**Status:** Planned
+**Status:** Done (code) — pending live-DB/CI confirm + real keys for credential-gated features (Firebase/Stripe/LLM, which run in demo/mock mode without keys)
 
 **Goal:** Let users upload, version, and attach resumes and cover letters to applications — ending filename chaos.
 
@@ -174,7 +174,7 @@ tests); real Clerk keys for an actual signed-in UI flow.
 
 ## Phase 5 — Analytics
 
-**Status:** Planned
+**Status:** Done (code) — pending live-DB/CI confirm + real keys for credential-gated features (Firebase/Stripe/LLM, which run in demo/mock mode without keys)
 
 **Goal:** Give engineers signal on what's working — funnel, response rate, and momentum — from a single dashboard.
 
@@ -197,7 +197,7 @@ tests); real Clerk keys for an actual signed-in UI flow.
 
 ## Phase 6 — Reminders & Follow-ups
 
-**Status:** Planned
+**Status:** Done (code) — pending live-DB/CI confirm + real keys for credential-gated features (Firebase/Stripe/LLM, which run in demo/mock mode without keys)
 
 **Goal:** Make sure follow-ups and interview prep actually happen — never silently drop an opportunity.
 
@@ -220,7 +220,7 @@ tests); real Clerk keys for an actual signed-in UI flow.
 
 ## Phase 7 — AI Features
 
-**Status:** Planned
+**Status:** Done (code) — pending live-DB/CI confirm + real keys for credential-gated features (Firebase/Stripe/LLM, which run in demo/mock mode without keys)
 
 **Goal:** Remove the busywork of tailoring materials and prepping for interviews through generation, not scraping.
 
@@ -243,7 +243,7 @@ tests); real Clerk keys for an actual signed-in UI flow.
 
 ## Phase 8 — Billing (Stripe)
 
-**Status:** Planned
+**Status:** Done (code) — pending live-DB/CI confirm + real keys for credential-gated features (Firebase/Stripe/LLM, which run in demo/mock mode without keys)
 
 **Goal:** Introduce paid plans with Stripe-backed entitlements and feature gating.
 
@@ -265,7 +265,7 @@ tests); real Clerk keys for an actual signed-in UI flow.
 
 ## Phase 9 — Polish & Scale
 
-**Status:** Planned
+**Status:** Done (code) — pending live-DB/CI confirm + real keys for credential-gated features (Firebase/Stripe/LLM, which run in demo/mock mode without keys)
 
 **Goal:** Take CareerOS from "feature-complete" to production-ready: accessible, fast, observable, and hardened.
 
