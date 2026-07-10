@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useCallback, useEffect, useState, type ReactNode } from "react"
+import { useActionState, useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
 import type { PipelineStage } from "@/lib/types"
@@ -50,7 +50,11 @@ export function StageForm({ stage, trigger, open, onOpenChange }: StageFormProps
   const [internalOpen, setInternalOpen] = useState(false)
   const isControlled = open !== undefined
   const isOpen = isControlled ? open : internalOpen
-  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen
+  const noop = useCallback(() => {}, [])
+  const setOpen = useMemo(
+    () => (isControlled ? (onOpenChange ?? noop) : setInternalOpen),
+    [isControlled, onOpenChange, noop],
+  )
   const close = useCallback(() => setOpen(false), [setOpen])
 
   return (
