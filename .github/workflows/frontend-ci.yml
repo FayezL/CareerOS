@@ -1,0 +1,34 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+  push:
+    branches:
+      - main
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - run: corepack enable
+
+      - run: pnpm install --dir frontend --frozen-lockfile
+
+      - run: pnpm --dir frontend lint
+
+      - run: pnpm --dir frontend typecheck
+
+      - run: pnpm --dir frontend build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_placeholder

@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-careeros}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-careeros}
+      POSTGRES_DB: ${POSTGRES_DB:-careeros}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  backend:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      ENV: local
+      LOG_LEVEL: INFO
+      CORS_ORIGINS: http://localhost:3000
+      CLERK_ISSUER: https://example.clerk.accounts.dev
+      CLERK_JWKS_URL: https://example.clerk.accounts.dev/.well-known/jwks.json
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: ["sh", "-c", "pip install -q uv && uv sync && uv run alembic upgrade head && uv run uvicorn careeros_api.main:app --host 0.0.0.0 --port 8000 --reload"]
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_placeholder
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    command: ["sh", "-c", "corepack enable && pnpm install && pnpm dev"]
+
+volumes:
+  pgdata:
+
+networks:
+  default:

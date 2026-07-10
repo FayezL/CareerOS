@@ -1,0 +1,75 @@
+[project]
+name = "careeros-api"
+version = "0.1.0"
+description = "CareerOS canonical FastAPI backend."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.29",
+    "alembic>=1.13",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "python-multipart>=0.0.9",
+    "pyjwt>=2.8",
+    "cryptography>=42.0",
+    "httpx>=0.27",
+    "email-validator>=2.1",
+    "structlog>=24.1",
+    # Firebase Storage is imported lazily by the storage client; absent creds
+    # never break application import.
+    "firebase-admin>=6.5",
+    # Stripe is imported lazily by the billing provider when STRIPE_SECRET_KEY
+    # is configured.
+    "stripe>=10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "anyio>=4.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/careeros_api"]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "N"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# conftest deliberately sets environment variables before importing the app.
+"tests/conftest.py" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = []
+
+[[tool.mypy.overrides]]
+module = ["alembic.*", "jwt.*", "firebase_admin.*", "stripe.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
