@@ -1,10 +1,15 @@
-import { AlertCircle } from "lucide-react"
+import type { Metadata } from "next"
 
 import { listApplications, listCompanies } from "@/lib/api-client"
 import type { Application, Company } from "@/lib/types"
+import { ErrorState } from "@/components/error-state"
 import { ApplicationsTable } from "@/features/applications/applications-table"
 
 export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: "Applications",
+}
 
 export default async function ApplicationsPage() {
   // Fetch both resources; a companies failure is non-fatal (the application
@@ -28,15 +33,7 @@ export default async function ApplicationsPage() {
   }
 
   if (errorMessage) {
-    return (
-      <div className="mx-auto mt-12 w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-destructive" />
-          <h2 className="text-lg font-semibold">Couldn&apos;t load applications</h2>
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">{errorMessage}</p>
-      </div>
-    )
+    return <ErrorState title="Couldn't load applications" description={errorMessage} />
   }
 
   return <ApplicationsTable applications={applications} companies={companies} />

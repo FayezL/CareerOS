@@ -1,10 +1,15 @@
-import { AlertCircle } from "lucide-react"
+import type { Metadata } from "next"
 
 import { listCompanies } from "@/lib/api-client"
 import type { Company } from "@/lib/types"
+import { ErrorState } from "@/components/error-state"
 import { CompaniesTable } from "@/features/companies/companies-table"
 
 export const dynamic = "force-dynamic"
+
+export const metadata: Metadata = {
+  title: "Companies",
+}
 
 export default async function CompaniesPage() {
   let companies: Company[] = []
@@ -17,15 +22,7 @@ export default async function CompaniesPage() {
   }
 
   if (errorMessage) {
-    return (
-      <div className="mx-auto mt-12 w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-destructive" />
-          <h2 className="text-lg font-semibold">Couldn&apos;t load companies</h2>
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">{errorMessage}</p>
-      </div>
-    )
+    return <ErrorState title="Couldn't load companies" description={errorMessage} />
   }
 
   return <CompaniesTable companies={companies} />

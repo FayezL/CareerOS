@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import type { Company, Contact, ContactRole } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/empty-state"
 import {
   Table,
   TableBody,
@@ -82,24 +83,22 @@ export function ContactsTable({ contacts, companies }: ContactsTableProps) {
 
 function EmptyContacts({ companies }: { companies: Company[] }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
-      <div className="rounded-full bg-muted p-3">
-        <Users className="h-6 w-6 text-muted-foreground" />
-      </div>
-      <div>
-        <p className="font-medium">No contacts yet</p>
-        <p className="text-sm text-muted-foreground">Add the people you meet during your search.</p>
-      </div>
-      <ContactForm
-        companies={companies}
-        trigger={
-          <Button variant="outline">
-            <Plus className="mr-2 h-4 w-4" />
-            New contact
-          </Button>
-        }
-      />
-    </div>
+    <EmptyState
+      icon={Users}
+      title="No contacts yet"
+      description="Add the people you meet during your search."
+      action={
+        <ContactForm
+          companies={companies}
+          trigger={
+            <Button variant="outline">
+              <Plus className="mr-2 h-4 w-4" />
+              New contact
+            </Button>
+          }
+        />
+      }
+    />
   )
 }
 

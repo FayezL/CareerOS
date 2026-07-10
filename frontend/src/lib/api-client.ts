@@ -1,24 +1,19 @@
 import { auth } from "@clerk/nextjs/server"
 import { getEnv } from "@/lib/env"
 import type {
-  AIResult,
   AnalyticsFunnel,
   AnalyticsOverTime,
   AnalyticsSummary,
   Application,
   Company,
   Contact,
-  CoverLetterRequest,
   Document,
   Interview,
-  InterviewPrepRequest,
   Note,
   PageOut,
   PipelineStage,
   Reminder,
   StageHistory,
-  Subscription,
-  TailorResumeRequest,
 } from "@/lib/types"
 
 /**
@@ -123,4 +118,63 @@ export async function listNotes(applicationId: string): Promise<Note[]> {
     `/notes?application_id=${encodeURIComponent(applicationId)}`,
   )
   return unwrapList(data)
+}
+
+/** Fetch documents attached to a given application. */
+export async function listDocuments(applicationId: string): Promise<Document[]> {
+  const data = await apiFetch<PageOut<Document> | Document[]>(
+    `/documents?application_id=${encodeURIComponent(applicationId)}`,
+  )
+  return unwrapList(data)
+}
+
+/**
+ * Fetch the user's reminders.
+ *
+ * Pass `completed` to filter by completion state and `dueBefore` (an ISO 8601
+ * timestamp) to limit to reminders due at or before that time. The backend
+ * caps `limit` at 100.
+ */
+export async function listReminders(params?: {
+  limit?: number
+  dueBefore?: string
+  completed?: boolean
+}): Promise<Reminder[]> {
+  const query = new URLSearchParams()
+  if (params?.limit) query.set("limit", String(params.limit))
+  if (params?.dueBefore) query.set("due_before", params.dueBefore)
+  if (typeof params?.completed === "boolean") {
+    query.set("completed", String(params.completed))
+  }
+  const qs = query.toString()
+  const data = await apiFetch<PageOut<Reminder> | Reminder[]>(`/reminders${qs ? `?${qs}` : ""}`)
+  return unwrapList(data)
+}
+
+/** Fetch headline analytics totals and the overall response rate. */
+export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+  return apiFetch<AnalyticsSummary>("/analytics/summary")
+}
+
+/** Fetch stage-by-stage funnel counts derived from stage history. */
+export async function getAnalyticsFunnel(): Promise<AnalyticsFunnel> {
+  return apiFetch<AnalyticsFunnel>("/analytics/funnel")
+}
+
+/**
+ * Fetch applications-per-bucket within a window. `from` / `to` are required by
+ * the backend and inclusive, expressed as `YYYY-MM-DD`. `granularity` defaults
+ * to `day` when omitted.
+ */
+export async function getAnalyticsOverTime(params: {
+  from: string
+  to: string
+  granularity?: AnalyticsOverTime["granularity"]
+}): Promise<AnalyticsOverTime> {
+  const query = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+    granularity: params.granularity ?? "day",
+  })
+  return apiFetch<AnalyticsOverTime>(`/analytics/over-time?${query.toString()}`)
 }

@@ -7,7 +7,16 @@ import { UserButton } from "@/lib/clerk"
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-64 shrink-0 flex-col border-r bg-card md:flex">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:shadow"
+      >
+        Skip to content
+      </a>
+      <aside
+        aria-label="Primary"
+        className="hidden w-64 shrink-0 flex-col border-r bg-card md:flex"
+      >
         <div className="flex h-16 items-center gap-2 border-b px-6">
           <Briefcase className="h-5 w-5" />
           <span className="font-semibold">CareerOS</span>
@@ -26,7 +35,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6">
+        <main id="main" className="flex-1 p-4 sm:p-6">
           <div className="mx-auto w-full max-w-5xl">{children}</div>
         </main>
       </div>

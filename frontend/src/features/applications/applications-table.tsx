@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import type { Application, ApplicationStatus, Company } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/empty-state"
 import {
   Table,
   TableBody,
@@ -80,26 +81,22 @@ export function ApplicationsTable({ applications, companies }: ApplicationsTable
 
 function EmptyApplications({ companies }: { companies: Company[] }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
-      <div className="rounded-full bg-muted p-3">
-        <ClipboardList className="h-6 w-6 text-muted-foreground" />
-      </div>
-      <div>
-        <p className="font-medium">No applications yet</p>
-        <p className="text-sm text-muted-foreground">
-          Track your first role to start building your pipeline.
-        </p>
-      </div>
-      <ApplicationForm
-        companies={companies}
-        trigger={
-          <Button variant="outline" disabled={companies.length === 0}>
-            <Plus className="mr-2 h-4 w-4" />
-            New application
-          </Button>
-        }
-      />
-    </div>
+    <EmptyState
+      icon={ClipboardList}
+      title="No applications yet"
+      description="Track your first role to start building your pipeline."
+      action={
+        <ApplicationForm
+          companies={companies}
+          trigger={
+            <Button variant="outline" disabled={companies.length === 0}>
+              <Plus className="mr-2 h-4 w-4" />
+              New application
+            </Button>
+          }
+        />
+      }
+    />
   )
 }
 

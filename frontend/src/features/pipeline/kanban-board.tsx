@@ -20,6 +20,7 @@ import { toast } from "sonner"
 import type { Application, Company, PipelineStage } from "@/lib/types"
 import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/empty-state"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -314,25 +315,21 @@ function EmptyStages() {
           Drag cards across stages to update your funnel.
         </p>
       </div>
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
-        <div className="rounded-full bg-muted p-3">
-          <KanbanSquare className="h-6 w-6 text-muted-foreground" />
-        </div>
-        <div>
-          <p className="font-medium">No pipeline stages yet</p>
-          <p className="text-sm text-muted-foreground">
-            Add your first stage to start building your board.
-          </p>
-        </div>
-        <StageForm
-          trigger={
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add stage
-            </Button>
-          }
-        />
-      </div>
+      <EmptyState
+        icon={KanbanSquare}
+        title="No pipeline stages yet"
+        description="Add your first stage to start building your board."
+        action={
+          <StageForm
+            trigger={
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add stage
+              </Button>
+            }
+          />
+        }
+      />
     </div>
   )
 }
@@ -356,23 +353,19 @@ function EmptyApplications() {
           }
         />
       </div>
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
-        <div className="rounded-full bg-muted p-3">
-          <KanbanSquare className="h-6 w-6 text-muted-foreground" />
-        </div>
-        <div>
-          <p className="font-medium">No applications yet</p>
-          <p className="text-sm text-muted-foreground">
-            Add your first application to start tracking your search.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/applications">
-            <Plus className="mr-2 h-4 w-4" />
-            New application
-          </Link>
-        </Button>
-      </div>
+      <EmptyState
+        icon={KanbanSquare}
+        title="No applications yet"
+        description="Add your first application to start tracking your search."
+        action={
+          <Button asChild>
+            <Link href="/applications">
+              <Plus className="mr-2 h-4 w-4" />
+              New application
+            </Link>
+          </Button>
+        }
+      />
     </div>
   )
 }

@@ -154,7 +154,9 @@ export interface Document {
 /** A follow-up reminder tied to an application, contact, or interview. */
 export interface Reminder {
   id: string
+  user_id?: string | null
   application_id: string | null
+  interview_id: string | null
   contact_id: string | null
   title: string
   due_at: string | null
@@ -164,17 +166,32 @@ export interface Reminder {
   updated_at: string
 }
 
+/** Payload for creating a reminder (`title` and `due_at` are required). */
+export interface ReminderCreate {
+  application_id?: string | null
+  interview_id?: string | null
+  title: string
+  due_at: string
+}
+
+/** Partial payload for updating a reminder. */
+export interface ReminderUpdate {
+  application_id?: string | null
+  interview_id?: string | null
+  title?: string
+  due_at?: string
+}
+
 /** Headline totals and rates for the analytics summary endpoint. */
 export interface AnalyticsSummary {
   generated_at: string
   totals: {
     applications: number
     active: number
+    interviews: number
     offers: number
-    rejections: number
   }
   response_rate: number
-  active_companies: number
 }
 
 /** A single stage row in the analytics funnel. */
@@ -213,42 +230,75 @@ export type PlanTier = "free" | "pro" | "team"
 /** Lifecycle state of a subscription. `noop` means billing is disabled. */
 export type SubscriptionStatus = "active" | "trialing" | "past_due" | "canceled" | "noop"
 
-/** The current user's subscription, when billing is enabled. */
+/**
+ * The current user's subscription.
+ *
+ * Mirrors the backend `SubscriptionRead` schema exactly.
+ */
 export interface Subscription {
+  id: string
+  user_id: string
   plan: PlanTier
   status: SubscriptionStatus
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
   current_period_end: string | null
-  cancel_at_period_end: boolean
+  created_at: string
+  updated_at: string
 }
 
-/** The AI generation tasks surfaced in CareerOS. */
-export type AITask = "tailor_resume" | "cover_letter" | "interview_prep"
+/** Request payload for `POST /billing/checkout`. */
+export interface CheckoutRequest {
+  plan: PlanTier
+  success_url: string
+  cancel_url: string
+}
 
-/** Request payload for tailoring a resume to a job description. */
+/** Checkout session returned by `POST /billing/checkout`. */
+export interface CheckoutSession {
+  id: string
+  url: string
+}
+
+/** Request payload for `POST /billing/portal`. */
+export interface PortalRequest {
+  return_url: string
+}
+
+/** Billing-portal session returned by `POST /billing/portal`. */
+export interface PortalSession {
+  url: string
+}
+
+/**
+ * AI generation request/response types.
+ *
+ * These mirror the FastAPI backend's `schemas/ai.py` contracts exactly.
+ * The backend returns a `GenerationResponse` whose sole field is `text`.
+ */
+
+/** Request payload for `POST /ai/tailor-resume`. */
 export interface TailorResumeRequest {
-  resume: string
+  resume_text: string
   job_description: string
 }
 
-/** Request payload for drafting a cover letter for an application. */
+/** Request payload for `POST /ai/cover-letter`. */
 export interface CoverLetterRequest {
-  application_id: string
-  company_name?: string
-  role_title?: string
-  job_description?: string
+  company: string
+  role: string
+  resume_text: string
 }
 
-/** Request payload for generating interview prep questions for a role. */
+/** Request payload for `POST /ai/interview-prep`. */
 export interface InterviewPrepRequest {
-  role_title: string
-  company_name?: string
-  job_description?: string
+  role: string
+  job_description: string
 }
 
-/** A completed AI generation result. */
-export interface AIResult {
-  task: AITask
-  content: string
+/** The generated text returned by every AI endpoint (`GenerationResponse`). */
+export interface GenerationResponse {
+  text: string
 }
 
 /**

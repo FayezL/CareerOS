@@ -38,8 +38,14 @@ function resolveClerkPublishableKey(): string {
 const clerkPublishableKey = resolveClerkPublishableKey()
 
 export const metadata: Metadata = {
-  title: "CareerOS",
-  description: "Your operating system for career growth.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  title: {
+    default: "CareerOS",
+    template: "%s · CareerOS",
+  },
+  description:
+    "Track applications, organize your pipeline and network, and surface the opportunities that move you forward.",
+  applicationName: "CareerOS",
 }
 
 export default function RootLayout({

@@ -1,14 +1,14 @@
 import type { Metadata } from "next"
-import { AlertCircle } from "lucide-react"
 
 import { listCompanies, listContacts } from "@/lib/api-client"
 import type { Company, Contact } from "@/lib/types"
+import { ErrorState } from "@/components/error-state"
 import { ContactsTable } from "@/features/contacts/contacts-table"
 
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
-  title: "Contacts · CareerOS",
+  title: "Contacts",
 }
 
 export default async function ContactsPage() {
@@ -30,15 +30,7 @@ export default async function ContactsPage() {
   }
 
   if (errorMessage) {
-    return (
-      <div className="mx-auto mt-12 w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-destructive" />
-          <h2 className="text-lg font-semibold">Couldn&apos;t load contacts</h2>
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">{errorMessage}</p>
-      </div>
-    )
+    return <ErrorState title="Couldn't load contacts" description={errorMessage} />
   }
 
   return <ContactsTable contacts={contacts} companies={companies} />

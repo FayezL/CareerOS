@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import type { Company } from "@/lib/types"
 import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/empty-state"
 import {
   Table,
   TableBody,
@@ -70,23 +71,21 @@ export function CompaniesTable({ companies }: CompaniesTableProps) {
 
 function EmptyCompanies() {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
-      <div className="rounded-full bg-muted p-3">
-        <Building2 className="h-6 w-6 text-muted-foreground" />
-      </div>
-      <div>
-        <p className="font-medium">No companies yet</p>
-        <p className="text-sm text-muted-foreground">Add your first company to get started.</p>
-      </div>
-      <CompanyForm
-        trigger={
-          <Button variant="outline">
-            <Plus className="mr-2 h-4 w-4" />
-            New company
-          </Button>
-        }
-      />
-    </div>
+    <EmptyState
+      icon={Building2}
+      title="No companies yet"
+      description="Add your first company to get started."
+      action={
+        <CompanyForm
+          trigger={
+            <Button variant="outline">
+              <Plus className="mr-2 h-4 w-4" />
+              New company
+            </Button>
+          }
+        />
+      }
+    />
   )
 }
 
