@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
-import { listApplications, listCompanies, listStages } from "@/lib/api-client"
-import type { Application, Company, PipelineStage } from "@/lib/types"
+import { listApplications, listCompanies, listStages } from "@/services/api-client"
+import type { Application, Company, PipelineStage } from "@/types"
 import { ErrorState } from "@/components/error-state"
 import { KanbanBoard } from "@/features/pipeline/kanban-board"
 

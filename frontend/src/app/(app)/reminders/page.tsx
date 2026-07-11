@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 import { Bell, Plus } from "lucide-react"
 
-import { listApplications, listInterviews, listReminders } from "@/lib/api-client"
-import type { Application, Interview, Reminder } from "@/lib/types"
+import { listApplications, listInterviews, listReminders } from "@/services/api-client"
+import type { Application, Interview, Reminder } from "@/types"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/empty-state"
 import { ErrorState } from "@/components/error-state"

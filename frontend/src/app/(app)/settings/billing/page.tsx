@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
-import { apiFetch } from "@/lib/api-client"
-import type { Subscription } from "@/lib/types"
+import { apiFetch } from "@/services/api-client"
+import type { Subscription } from "@/types"
 import { ErrorState } from "@/components/error-state"
 import { BillingPanel } from "@/features/billing/billing-panel"
 

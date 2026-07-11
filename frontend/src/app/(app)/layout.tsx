@@ -1,8 +1,9 @@
 import { Briefcase } from "lucide-react"
 
 import { NewMenu } from "@/components/new-menu"
-import { Sidebar } from "@/components/sidebar"
-import { UserButton } from "@/lib/clerk"
+import { Sidebar } from "@/components/layout/sidebar"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { UserButton } from "@/services/clerk"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -31,6 +32,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <span className="font-semibold md:hidden">CareerOS</span>
           <div className="ml-auto flex items-center gap-3">
             <NewMenu />
+            <ThemeToggle />
             <UserButton afterSignOutUrl="/" />
           </div>
         </header>

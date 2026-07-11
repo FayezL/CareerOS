@@ -3,7 +3,7 @@
 import { useActionState, useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
-import type { PipelineStage } from "@/lib/types"
+import type { PipelineStage } from "@/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,

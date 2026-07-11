@@ -3,7 +3,7 @@
 import { useActionState, useCallback, useEffect, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
-import type { Application, Interview, Reminder } from "@/lib/types"
+import type { Application, Interview, Reminder } from "@/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,

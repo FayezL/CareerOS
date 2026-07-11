@@ -5,7 +5,7 @@ import { useAuth } from "@clerk/nextjs"
 import { FileText, Loader2, Trash2, Upload } from "lucide-react"
 import { toast } from "sonner"
 
-import type { Document, DocumentType } from "@/lib/types"
+import type { Document, DocumentType } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

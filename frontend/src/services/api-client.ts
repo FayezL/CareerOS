@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server"
-import { getEnv } from "@/lib/env"
+import { getEnv } from "@/schemas/env"
 import type {
   AnalyticsFunnel,
   AnalyticsOverTime,
@@ -14,7 +14,7 @@ import type {
   PipelineStage,
   Reminder,
   StageHistory,
-} from "@/lib/types"
+} from "@/types"
 
 /**
  * Server-side fetch helper that forwards the caller's Clerk session JWT as a

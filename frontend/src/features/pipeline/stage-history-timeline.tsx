@@ -1,6 +1,6 @@
 import { History } from "lucide-react"
 
-import type { StageHistory } from "@/lib/types"
+import type { StageHistory } from "@/types"
 
 type StageHistoryTimelineProps = {
   history: StageHistory[]

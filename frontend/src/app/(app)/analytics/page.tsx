@@ -1,7 +1,11 @@
 import type { Metadata } from "next"
 
-import { getAnalyticsFunnel, getAnalyticsOverTime, getAnalyticsSummary } from "@/lib/api-client"
-import type { AnalyticsFunnel, AnalyticsOverTime, AnalyticsSummary } from "@/lib/types"
+import {
+  getAnalyticsFunnel,
+  getAnalyticsOverTime,
+  getAnalyticsSummary,
+} from "@/services/api-client"
+import type { AnalyticsFunnel, AnalyticsOverTime, AnalyticsSummary } from "@/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ErrorState } from "@/components/error-state"
 import { FunnelChart } from "@/features/analytics/funnel-chart"

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 
-import { apiFetch } from "@/lib/api-client"
+import { apiFetch } from "@/services/api-client"
 
 export type ActionResult = { ok: boolean; error?: string }
 

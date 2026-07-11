@@ -2,7 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
-import type { FunnelPoint } from "@/lib/types"
+import type { FunnelPoint } from "@/types"
 
 type FunnelChartProps = {
   data: FunnelPoint[]

@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache"
 
-import { apiFetch } from "@/lib/api-client"
+import { apiFetch } from "@/services/api-client"
 import type {
   CoverLetterRequest,
   GenerationResponse,
   InterviewPrepRequest,
   TailorResumeRequest,
-} from "@/lib/types"
+} from "@/types"
 
 /** Result of an AI generation action — `result` holds the generated text. */
 export type AIActionResult = { ok: boolean; result?: string; error?: string }

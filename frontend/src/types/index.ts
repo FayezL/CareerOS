@@ -305,7 +305,7 @@ export interface GenerationResponse {
  * Generic paginated envelope.
  *
  * The backend may return either this shape or a bare array for list endpoints;
- * `unwrapList` in `api-client.ts` normalizes both to an array.
+ * `unwrapList` in `services/api-client.ts` normalizes both to an array.
  */
 export interface PageOut<T> {
   items: T[]

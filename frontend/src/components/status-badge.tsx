@@ -1,4 +1,4 @@
-import type { ApplicationStatus } from "@/lib/types"
+import type { ApplicationStatus } from "@/types"
 import { Badge } from "@/components/ui/badge"
 
 type StatusBadgeProps = {

@@ -17,7 +17,7 @@ import {
 import { KanbanSquare, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
-import type { Application, Company, PipelineStage } from "@/lib/types"
+import type { Application, Company, PipelineStage } from "@/types"
 import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/empty-state"
@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+import { cn } from "@/utils/cn"
 
 import { StageForm } from "./stage-form"
 import { deleteStage, moveApplication } from "./actions"

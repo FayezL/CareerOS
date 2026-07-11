@@ -4,8 +4,8 @@ import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 
-import { apiFetch } from "@/lib/api-client"
-import type { CheckoutSession, PortalSession, PlanTier } from "@/lib/types"
+import { apiFetch } from "@/services/api-client"
+import type { CheckoutSession, PortalSession, PlanTier } from "@/types"
 
 export type ActionResult = { ok: boolean; demo?: boolean; error?: string }
 

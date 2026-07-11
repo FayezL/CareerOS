@@ -10,7 +10,7 @@ import {
   YAxis,
 } from "recharts"
 
-import type { OverTimePoint } from "@/lib/types"
+import type { OverTimePoint } from "@/types"
 
 type OverTimeChartProps = {
   data: OverTimePoint[]

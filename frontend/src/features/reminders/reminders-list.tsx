@@ -4,7 +4,7 @@ import { useMemo, useTransition } from "react"
 import { AlarmClock, Check, Clock, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
-import type { Reminder } from "@/lib/types"
+import type { Reminder } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 

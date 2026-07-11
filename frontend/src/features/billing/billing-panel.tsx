@@ -3,11 +3,11 @@
 import { useTransition } from "react"
 import { toast } from "sonner"
 
-import type { PlanTier, Subscription, SubscriptionStatus } from "@/lib/types"
+import type { PlanTier, Subscription, SubscriptionStatus } from "@/types"
 import { Badge, type BadgeProps } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import { cn } from "@/utils/cn"
 
 import { openPortal, startCheckout } from "./actions"
 

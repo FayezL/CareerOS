@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ArrowRight, Sparkles } from "lucide-react"
 
-import { auth } from "@/lib/clerk"
+import { auth } from "@/services/clerk"
 import { Button } from "@/components/ui/button"
 
 export const dynamic = "force-dynamic"

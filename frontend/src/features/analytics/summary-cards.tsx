@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { AnalyticsSummary } from "@/lib/types"
+import type { AnalyticsSummary } from "@/types"
 
 type SummaryCardsProps = {
   summary: AnalyticsSummary

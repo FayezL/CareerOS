@@ -3,7 +3,7 @@
 import { useTransition } from "react"
 import { toast } from "sonner"
 
-import type { PipelineStage } from "@/lib/types"
+import type { PipelineStage } from "@/types"
 import {
   Select,
   SelectContent,

@@ -4,7 +4,7 @@ import { useTransition } from "react"
 import { Pencil, Plus, Trash2, Users } from "lucide-react"
 import { toast } from "sonner"
 
-import type { Company, Contact, ContactRole } from "@/lib/types"
+import type { Company, Contact, ContactRole } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/empty-state"

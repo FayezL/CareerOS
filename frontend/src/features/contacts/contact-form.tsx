@@ -3,7 +3,7 @@
 import { useActionState, useCallback, useEffect, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
-import type { Company, Contact, ContactRole } from "@/lib/types"
+import type { Company, Contact, ContactRole } from "@/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,

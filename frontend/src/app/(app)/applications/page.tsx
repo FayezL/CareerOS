@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
-import { listApplications, listCompanies } from "@/lib/api-client"
-import type { Application, Company } from "@/lib/types"
+import { listApplications, listCompanies } from "@/services/api-client"
+import type { Application, Company } from "@/types"
 import { ErrorState } from "@/components/error-state"
 import { ApplicationsTable } from "@/features/applications/applications-table"
 
