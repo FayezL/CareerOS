@@ -59,8 +59,12 @@ class DocumentRepository(BaseRepository[Document]):
         user_id: uuid.UUID,
         data: DocumentCreate,
         firebase_path: str,
+        document_id: uuid.UUID | None = None,
     ) -> Document:
-        """Insert a new document owned by ``user_id``."""
+        """Insert a new document owned by ``user_id`` (optional explicit id)."""
+        kwargs: dict[str, object] = {}
+        if document_id is not None:
+            kwargs["id"] = document_id
         document = Document(
             user_id=user_id,
             application_id=data.application_id,
@@ -69,6 +73,7 @@ class DocumentRepository(BaseRepository[Document]):
             mime_type=data.mime_type,
             size_bytes=data.size_bytes,
             firebase_path=firebase_path,
+            **kwargs,
         )
         self.session.add(document)
         await self.session.flush()

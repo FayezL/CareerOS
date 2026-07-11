@@ -9,12 +9,19 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from careeros_api.core.config import settings
+
+# NullPool outside production: every connection is opened/closed per use, which
+# avoids the "Event loop is closed" errors when pytest-asyncio spins a fresh loop
+# per test. Production keeps the default QueuePool for throughput.
+_poolclass = None if settings.ENV == "production" else NullPool
 
 engine = create_async_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
+    poolclass=_poolclass,
 )
 
 AsyncSessionLocal = async_sessionmaker(

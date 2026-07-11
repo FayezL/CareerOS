@@ -49,6 +49,7 @@ async def create_stage(
     session: AsyncSession, user: User, data: PipelineStageCreate
 ) -> PipelineStageRead:
     """Create a new stage appended to the caller's pipeline."""
+    await ensure_default_stages(session, user.id)
     repo = PipelineStageRepository(session)
     stage = await repo.create(user.id, data)
     return PipelineStageRead.model_validate(stage)

@@ -116,6 +116,7 @@ async def move_application(
         raise NotFoundError(f"Pipeline stage {data.to_stage_id} not found")
 
     moved = await app_repo.move(application, data.to_stage_id, data.note)
+    await session.refresh(moved, attribute_names=["company", "current_stage"])
     return ApplicationRead.model_validate(moved)
 
 

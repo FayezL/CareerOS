@@ -66,15 +66,19 @@ async def create_document(
         if await app_repo.get(user.id, data.application_id) is None:
             raise NotFoundError(f"Application {data.application_id} not found")
 
+    # Generate the document id once so the storage target's upload URL and the
+    # persisted row share the same identifier (otherwise the URL pointed at a
+    # different, randomly-generated id).
+    document_id = uuid.uuid4()
     target: UploadTarget = await storage.create_upload_target(
         user_id=user.id,
-        document_id=uuid.uuid4(),
+        document_id=document_id,
         name=data.name,
         mime_type=data.mime_type,
         size_bytes=data.size_bytes,
     )
     repo = DocumentRepository(session)
-    document = await repo.create(user.id, data, target.storage_path)
+    document = await repo.create(user.id, data, target.storage_path, document_id=document_id)
     await session.flush()
     return document_with_target(document, target)
 

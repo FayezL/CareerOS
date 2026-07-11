@@ -58,6 +58,23 @@ async def _db_is_available() -> bool:
         return False
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def _reset_db() -> None:
+    """Truncate every application table before each test when a DB is reachable.
+
+    Without this, committed rows from one test leak into the next and trip the
+    per-user unique constraints (e.g. ``uq_companies_user_id_name_lower``).
+    """
+    if not await _db_is_available():
+        return
+    from careeros_api.db.base import Base
+    from careeros_api.db.session import engine
+
+    table_list = ", ".join(f'"{name}"' for name in Base.metadata.tables)
+    async with engine.begin() as conn:
+        await conn.execute(text(f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE"))
+
+
 @pytest_asyncio.fixture
 async def require_db() -> None:
     """Skip the requesting test if the database is not reachable."""
