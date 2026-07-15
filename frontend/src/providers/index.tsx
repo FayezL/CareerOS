@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { ClerkProvider } from "@clerk/nextjs"
+import { shadcn } from "@clerk/ui/themes"
 
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -37,7 +38,7 @@ const clerkPublishableKey = resolveClerkPublishableKey()
  */
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider publishableKey={clerkPublishableKey}>
+    <ClerkProvider publishableKey={clerkPublishableKey} appearance={{ theme: shadcn }}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         {children}
       </ThemeProvider>
