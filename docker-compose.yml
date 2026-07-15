@@ -12,7 +12,10 @@ services:
       interval: 5s
       retries: 10
     ports:
-      - "5432:5432"
+      # Host port 5433 (not 5432) to avoid clashing with a native Windows
+      # Postgres on 5432. Container port stays 5432 so the backend's internal
+      # `db:5432` connection (DATABASE_URL) is unaffected. DBeaver uses 5433.
+      - "5433:5432"
 
   backend:
     image: python:3.12-slim
