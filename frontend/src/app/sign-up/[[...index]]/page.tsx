@@ -1,9 +1,11 @@
 import { SignUp } from "@clerk/nextjs"
 
+import { AuthLayout } from "@/components/auth/auth-layout"
+
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <AuthLayout title="Create your account" subtitle="Start tracking your job search in minutes.">
       <SignUp />
-    </div>
+    </AuthLayout>
   )
 }

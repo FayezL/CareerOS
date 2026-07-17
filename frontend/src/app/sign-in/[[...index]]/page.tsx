@@ -1,9 +1,11 @@
 import { SignIn } from "@clerk/nextjs"
 
+import { AuthLayout } from "@/components/auth/auth-layout"
+
 export default function SignInPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <AuthLayout title="Welcome back" subtitle="Sign in to continue to your dashboard.">
       <SignIn />
-    </div>
+    </AuthLayout>
   )
 }
