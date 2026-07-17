@@ -6,7 +6,7 @@ import uuid
 from datetime import date
 
 import sqlalchemy as sa
-from sqlalchemy import Date, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,6 +29,14 @@ class Application(UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin, Base):
     """A single job application tracked by a user against a company."""
 
     __tablename__ = "applications"
+    __table_args__ = (
+        Index(
+            "ix_applications_user_id_created_at_id",
+            "user_id",
+            text("created_at DESC"),
+            text("id DESC"),
+        ),
+    )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

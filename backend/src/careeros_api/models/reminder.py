@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,6 +20,12 @@ class Reminder(UUIDPrimaryKey, TimestampMixin, Base):
     __table_args__ = (
         Index("ix_reminders_user_id_due_at", "user_id", "due_at"),
         Index("ix_reminders_user_id_completed_at", "user_id", "completed_at"),
+        Index(
+            "ix_reminders_user_id_created_at_id",
+            "user_id",
+            text("created_at DESC"),
+            text("id DESC"),
+        ),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(

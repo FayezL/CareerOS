@@ -23,6 +23,12 @@ class Company(UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin, Base):
             text("lower(name)"),
             unique=True,
         ),
+        Index(
+            "ix_companies_user_id_created_at_id",
+            "user_id",
+            text("created_at DESC"),
+            text("id DESC"),
+        ),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(

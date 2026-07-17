@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,6 +16,14 @@ class Contact(UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin, Base):
     """A person the user is engaging with (recruiter, interviewer, referral, ...)."""
 
     __tablename__ = "contacts"
+    __table_args__ = (
+        Index(
+            "ix_contacts_user_id_created_at_id",
+            "user_id",
+            text("created_at DESC"),
+            text("id DESC"),
+        ),
+    )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

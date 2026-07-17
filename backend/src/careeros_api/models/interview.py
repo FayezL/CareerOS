@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 
 import sqlalchemy as sa
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -28,7 +28,15 @@ class Interview(UUIDPrimaryKey, TimestampMixin, SoftDeleteMixin, Base):
     """A scheduled or completed interview event attached to an application."""
 
     __tablename__ = "interviews"
-    __table_args__ = (Index("ix_interviews_user_id_scheduled_at", "user_id", "scheduled_at"),)
+    __table_args__ = (
+        Index("ix_interviews_user_id_scheduled_at", "user_id", "scheduled_at"),
+        Index(
+            "ix_interviews_user_id_created_at_id",
+            "user_id",
+            text("created_at DESC"),
+            text("id DESC"),
+        ),
+    )
 
     application_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 
 import sqlalchemy as sa
-from sqlalchemy import BigInteger, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import BigInteger, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -29,7 +29,15 @@ class Document(UUIDPrimaryKey, TimestampMixin, Base):
     """
 
     __tablename__ = "documents"
-    __table_args__ = (Index("ix_documents_user_id_type", "user_id", "type"),)
+    __table_args__ = (
+        Index("ix_documents_user_id_type", "user_id", "type"),
+        Index(
+            "ix_documents_user_id_created_at_id",
+            "user_id",
+            text("created_at DESC"),
+            text("id DESC"),
+        ),
+    )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
