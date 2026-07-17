@@ -104,7 +104,7 @@ export function AuthLayout({
               <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
               <p className="text-sm text-muted-foreground">{subtitle}</p>
             </div>
-            <div className="[&_.cl-form-button-primary]:w-full">{children}</div>
+            {children}
           </div>
         </div>
       </main>
