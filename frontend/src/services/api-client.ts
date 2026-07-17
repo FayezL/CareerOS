@@ -26,7 +26,10 @@ import type {
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const { getToken } = await auth()
   const token = await getToken()
-  const base = getEnv().NEXT_PUBLIC_API_URL
+  const env = getEnv()
+  // Server-side fetches run INSIDE this container; use the internal backend URL
+  // (Docker service hostname) when provided. The public URL is for the browser.
+  const base = env.API_INTERNAL_URL ?? env.NEXT_PUBLIC_API_URL
 
   const headers = new Headers(init?.headers)
   headers.set("Accept", "application/json")

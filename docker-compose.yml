@@ -43,6 +43,10 @@ services:
       - ./frontend:/app
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+      # Server-side fetches (Server Components) run inside this container, where
+      # `localhost:8000` is unreachable. Use the backend service hostname on the
+      # Docker network instead. The public URL above stays for browser fetches.
+      API_INTERNAL_URL: http://backend:8000/api/v1
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-pk_test_placeholder}
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
     depends_on:
