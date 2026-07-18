@@ -32,6 +32,7 @@ function compact(entries: Record<string, unknown>): Record<string, unknown> {
 function buildApplicationPayload(formData: FormData): Record<string, unknown> {
   return compact({
     company_id: textValue(formData, "company_id"),
+    company_name: textValue(formData, "company_name"),
     role_title: textValue(formData, "role_title"),
     status: textValue(formData, "status"),
     job_url: textValue(formData, "job_url"),
@@ -44,14 +45,23 @@ function buildApplicationPayload(formData: FormData): Record<string, unknown> {
   })
 }
 
+function validateCompanyRef(payload: Record<string, unknown>): string | null {
+  if (payload.company_id && payload.company_name) {
+    return "Provide either an existing company or a new name, not both."
+  }
+  if (!payload.company_id && !payload.company_name) {
+    return "Please choose or type a company."
+  }
+  return null
+}
+
 export async function createApplication(formData: FormData): Promise<ActionResult> {
   const payload = buildApplicationPayload(formData)
   if (!payload.role_title) {
     return { ok: false, error: "Role title is required." }
   }
-  if (!payload.company_id) {
-    return { ok: false, error: "Please choose a company." }
-  }
+  const companyError = validateCompanyRef(payload)
+  if (companyError) return { ok: false, error: companyError }
   try {
     await apiFetch("/applications", {
       method: "POST",
@@ -59,6 +69,7 @@ export async function createApplication(formData: FormData): Promise<ActionResul
       body: JSON.stringify(payload),
     })
     revalidatePath("/applications")
+    revalidatePath("/companies")
     return { ok: true }
   } catch (error) {
     return { ok: false, error: errorMessage(error) }
@@ -70,9 +81,8 @@ export async function updateApplication(id: string, formData: FormData): Promise
   if (!payload.role_title) {
     return { ok: false, error: "Role title is required." }
   }
-  if (!payload.company_id) {
-    return { ok: false, error: "Please choose a company." }
-  }
+  const companyError = validateCompanyRef(payload)
+  if (companyError) return { ok: false, error: companyError }
   try {
     await apiFetch(`/applications/${id}`, {
       method: "PATCH",
@@ -80,6 +90,7 @@ export async function updateApplication(id: string, formData: FormData): Promise
       body: JSON.stringify(payload),
     })
     revalidatePath("/applications")
+    revalidatePath("/companies")
     return { ok: true }
   } catch (error) {
     return { ok: false, error: errorMessage(error) }

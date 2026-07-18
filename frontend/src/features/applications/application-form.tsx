@@ -3,7 +3,7 @@
 import { useActionState, useCallback, useEffect, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
-import type { Application, ApplicationStatus, Company } from "@/types"
+import type { Application, ApplicationStatus } from "@/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { CompanyCombobox } from "@/components/company-combobox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -35,7 +36,6 @@ const STATUS_OPTIONS: { value: ApplicationStatus; label: string }[] = [
 ]
 
 type ApplicationFormProps = {
-  companies: Company[]
   application?: Application
   trigger: ReactNode
 }
@@ -45,8 +45,12 @@ type ApplicationFormProps = {
  * open state and trigger; the inner form (with its `useActionState`) lives in
  * `DialogContent`, which Radix only mounts while open, so each open begins with
  * a fresh action state and prefilled defaults.
+ *
+ * The company field is a combobox that searches the user's existing companies
+ * and auto-creates a new one when the typed name doesn't match — so this form
+ * never requires a company to exist first.
  */
-export function ApplicationForm({ companies, application, trigger }: ApplicationFormProps) {
+export function ApplicationForm({ application, trigger }: ApplicationFormProps) {
   const [open, setOpen] = useState(false)
   const close = useCallback(() => setOpen(false), [])
 
@@ -54,19 +58,18 @@ export function ApplicationForm({ companies, application, trigger }: Application
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[560px]">
-        <ApplicationFormFields companies={companies} application={application} onClose={close} />
+        <ApplicationFormFields application={application} onClose={close} />
       </DialogContent>
     </Dialog>
   )
 }
 
 type ApplicationFormFieldsProps = {
-  companies: Company[]
   application?: Application
   onClose: () => void
 }
 
-function ApplicationFormFields({ companies, application, onClose }: ApplicationFormFieldsProps) {
+function ApplicationFormFields({ application, onClose }: ApplicationFormFieldsProps) {
   const [state, formAction, isPending] = useActionState<ActionResult, FormData>(
     async (_prevState, formData) => {
       const fn = application ? updateApplication.bind(null, application.id) : createApplication
@@ -84,7 +87,6 @@ function ApplicationFormFields({ companies, application, onClose }: ApplicationF
     }
   }, [state, application, onClose])
 
-  const defaultCompanyId = application?.company_id ?? companies[0]?.id
   const defaultStatus = application?.status ?? "active"
   const appliedDate = application?.applied_at ? application.applied_at.slice(0, 10) : ""
 
@@ -93,32 +95,26 @@ function ApplicationFormFields({ companies, application, onClose }: ApplicationF
       <DialogHeader>
         <DialogTitle>{application ? "Edit application" : "New application"}</DialogTitle>
         <DialogDescription>
-          {application ? "Update this application's details." : "Track a role you're pursuing."}
+          {application
+            ? "Update this application's details."
+            : "Track a role you're pursuing. Type a company name to search or create one."}
         </DialogDescription>
       </DialogHeader>
 
       <form action={formAction} className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="company_id">Company</Label>
-            {companies.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Add a company first, then create an application.
-              </p>
-            ) : (
-              <Select name="company_id" defaultValue={defaultCompanyId} required>
-                <SelectTrigger id="company_id">
-                  <SelectValue placeholder="Select a company" />
-                </SelectTrigger>
-                <SelectContent>
-                  {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <Label htmlFor="company">Company</Label>
+            <CompanyCombobox
+              defaultCompany={
+                application?.company
+                  ? { id: application.company.id, name: application.company.name }
+                  : undefined
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Search existing companies or type a new one — it&apos;s created automatically.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="role_title">Role title</Label>

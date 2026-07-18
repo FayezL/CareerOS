@@ -38,7 +38,6 @@ export function ApplicationsTable({ applications, companies }: ApplicationsTable
           </p>
         </div>
         <ApplicationForm
-          companies={companies}
           trigger={
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -49,7 +48,7 @@ export function ApplicationsTable({ applications, companies }: ApplicationsTable
       </div>
 
       {applications.length === 0 ? (
-        <EmptyApplications companies={companies} />
+        <EmptyApplications />
       ) : (
         <div className="overflow-hidden rounded-lg border">
           <Table>
@@ -67,7 +66,6 @@ export function ApplicationsTable({ applications, companies }: ApplicationsTable
                 <ApplicationRow
                   key={application.id}
                   application={application}
-                  companies={companies}
                   companyName={companyName.get(application.company_id) ?? "Unknown"}
                 />
               ))}
@@ -79,7 +77,7 @@ export function ApplicationsTable({ applications, companies }: ApplicationsTable
   )
 }
 
-function EmptyApplications({ companies }: { companies: Company[] }) {
+function EmptyApplications() {
   return (
     <EmptyState
       icon={ClipboardList}
@@ -87,9 +85,8 @@ function EmptyApplications({ companies }: { companies: Company[] }) {
       description="Track your first role to start building your pipeline."
       action={
         <ApplicationForm
-          companies={companies}
           trigger={
-            <Button variant="outline" disabled={companies.length === 0}>
+            <Button variant="outline">
               <Plus className="mr-2 h-4 w-4" />
               New application
             </Button>
@@ -102,11 +99,9 @@ function EmptyApplications({ companies }: { companies: Company[] }) {
 
 function ApplicationRow({
   application,
-  companies,
   companyName,
 }: {
   application: Application
-  companies: Company[]
   companyName: string
 }) {
   const [isPending, startTransition] = useTransition()
@@ -133,7 +128,6 @@ function ApplicationRow({
       <TableCell>
         <div className="flex items-center justify-end gap-1">
           <ApplicationForm
-            companies={companies}
             application={application}
             trigger={
               <Button variant="ghost" size="icon">

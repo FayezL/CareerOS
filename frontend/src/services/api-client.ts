@@ -6,6 +6,7 @@ import type {
   AnalyticsSummary,
   Application,
   Company,
+  CompanyOption,
   Contact,
   Document,
   Interview,
@@ -76,6 +77,14 @@ function unwrapList<T>(data: PageOut<T> | T[]): T[] {
 export async function listCompanies(): Promise<Company[]> {
   const data = await apiFetch<PageOut<Company> | Company[]>("/companies")
   return unwrapList(data)
+}
+
+/** Prefix-match autocomplete for the company picker (used by the combobox). */
+export async function searchCompanies(query: string): Promise<CompanyOption[]> {
+  const q = query.trim()
+  if (!q) return []
+  const data = await apiFetch<CompanyOption[]>(`/companies/search?q=${encodeURIComponent(q)}`)
+  return data
 }
 
 /** Fetch the authenticated user's applications. */

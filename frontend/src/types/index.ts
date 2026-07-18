@@ -36,6 +36,15 @@ export interface Company {
   updated_at: string
 }
 
+/** Lightweight company record returned by the autocomplete search endpoint. */
+export interface CompanyOption {
+  id: string
+  name: string
+  website: string | null
+  industry: string | null
+  location: string | null
+}
+
 /** A single job application. */
 export interface Application {
   id: string
