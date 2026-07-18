@@ -8,6 +8,7 @@ import {
   Building2,
   CalendarClock,
   ClipboardList,
+  Home,
   KanbanSquare,
   Settings,
   Sparkles,
@@ -31,6 +32,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "Main",
     items: [
+      { label: "Dashboard", href: "/dashboard", icon: Home },
       { label: "Applications", href: "/applications", icon: ClipboardList },
       { label: "Pipeline", href: "/pipeline", icon: KanbanSquare },
       { label: "Companies", href: "/companies", icon: Building2 },
