@@ -51,3 +51,15 @@ class CompanyRead(BaseModel):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class CompanyOption(BaseModel):
+    """Lightweight company record for autocomplete / combobox results."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    website: str | None = None
+    industry: str | None = None
+    location: str | None = None

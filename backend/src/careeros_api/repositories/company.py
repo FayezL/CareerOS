@@ -6,7 +6,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy import ColumnExpressionArgument, select
+from sqlalchemy import ColumnExpressionArgument, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from careeros_api.models.company import Company
@@ -49,6 +49,35 @@ class CompanyRepository(BaseRepository[Company]):
             Company.id == company_id,
             Company.user_id == user_id,
             Company.deleted_at.is_(None),
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def search(self, user_id: uuid.UUID, *, q: str, limit: int = 8) -> Sequence[Company]:
+        """Prefix-match autocomplete for the company picker.
+
+        Matches ``name`` case-insensitively by prefix (``q%``), ordered by name
+        so the most natural candidate lands first. Deleted companies excluded.
+        """
+        stmt = (
+            select(Company)
+            .where(
+                Company.user_id == user_id,
+                Company.deleted_at.is_(None),
+                Company.name.ilike(f"{q}%"),
+            )
+            .order_by(Company.name.asc())
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def get_by_name(self, user_id: uuid.UUID, name: str) -> Company | None:
+        """Return the caller's non-deleted company with an exact (case-insensitive) name."""
+        stmt = select(Company).where(
+            Company.user_id == user_id,
+            Company.deleted_at.is_(None),
+            func.lower(Company.name) == func.lower(name),
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()

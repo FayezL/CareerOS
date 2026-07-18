@@ -175,3 +175,94 @@ async def test_application_bad_body_returns_422(
     )
     assert response.status_code == 422
     assert response.json()["title"] == "Validation Error"
+
+
+async def test_create_application_with_company_name_creates_company(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    """Typing a new company name auto-creates the company in the same request."""
+    headers = auth()
+    create = await client.post(
+        "/api/v1/applications",
+        headers=headers,
+        json={"company_name": "Microsoft", "role_title": "SDE II"},
+    )
+    assert create.status_code == 201, create.text
+    body = create.json()
+    assert body["company"]["name"] == "Microsoft"
+    company_id = body["company"]["id"]
+
+    # The company now exists in the caller's company list.
+    companies = await client.get("/api/v1/companies", headers=headers)
+    assert any(
+        c["id"] == company_id and c["name"] == "Microsoft" for c in companies.json()["items"]
+    )
+
+
+async def test_create_application_reuses_same_name_company_case_insensitive(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    """A repeated company name reuses the existing row — no duplicate."""
+    headers = auth()
+    await _create_company(client, headers, "Stripe")
+
+    create = await client.post(
+        "/api/v1/applications",
+        headers=headers,
+        # different casing should still match the existing "Stripe"
+        json={"company_name": "stripe", "role_title": "Engineer"},
+    )
+    assert create.status_code == 201, create.text
+    assert create.json()["company"]["name"] == "Stripe"
+
+    # Exactly one company row for "Stripe".
+    companies = await client.get("/api/v1/companies?q=tripe", headers=headers)
+    assert len([c for c in companies.json()["items"] if c["name"] == "Stripe"]) == 1
+
+
+async def test_create_application_with_both_company_refs_returns_422(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    headers = auth()
+    company_id = await _create_company(client, headers, "GitHub")
+    response = await client.post(
+        "/api/v1/applications",
+        headers=headers,
+        json={"company_id": company_id, "company_name": "GitHub", "role_title": "Eng"},
+    )
+    assert response.status_code == 422
+
+
+async def test_company_search_autocomplete_prefix(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    """``/companies/search`` prefix-matches case-insensitively for the combobox."""
+    headers = auth()
+    await _create_company(client, headers, "Microsoft")
+    await _create_company(client, headers, "Microsoft Research")
+    await _create_company(client, headers, "Stripe")
+    await _create_company(client, headers, "GitHub")
+
+    micr = await client.get("/api/v1/companies/search?q=micr", headers=headers)
+    assert micr.status_code == 200
+    names = [c["name"] for c in micr.json()]
+    assert "Microsoft" in names and "Microsoft Research" in names
+    assert "Stripe" not in names and "GitHub" not in names
+
+    # Empty query short-circuits to an empty list.
+    empty = await client.get("/api/v1/companies/search?q=%20", headers=headers)
+    assert empty.status_code == 200
+    assert empty.json() == []
+
+
+async def test_company_search_is_user_scoped(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    """One user's companies never leak into another user's search results."""
+    headers_a = auth()
+    await _create_company(client, headers_a, "Acme")
+
+    headers_b = auth(sub="user_other", email="other@test.local")
+    results = await client.get("/api/v1/companies/search?q=Acm", headers=headers_b)
+    assert results.status_code == 200
+    assert results.json() == []

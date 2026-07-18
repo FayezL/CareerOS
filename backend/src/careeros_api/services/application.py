@@ -17,6 +17,7 @@ from careeros_api.schemas.application import (
     ApplicationUpdate,
 )
 from careeros_api.schemas.common import PageOut
+from careeros_api.schemas.company import CompanyCreate
 from careeros_api.schemas.pipeline import MoveStageRequest, StageHistoryRead
 
 
@@ -60,18 +61,35 @@ async def get_application(
 async def create_application(
     session: AsyncSession, user: User, data: ApplicationCreate
 ) -> ApplicationRead:
-    """Create a new application.
+    """Create a new application, resolving the company from the payload.
 
-    The referenced ``company_id`` must belong to the caller; if it does not,
-    a ``NotFoundError`` is raised so existence is never leaked.
+    The caller may pass either an existing ``company_id`` or a free-text
+    ``company_name``. For a name, we reuse the caller's same-name company if one
+    exists (case-insensitive) and otherwise create one inline — so the user
+    never has to leave the application flow to manage companies. A bad
+    ``company_id`` raises ``NotFoundError`` without leaking existence.
     """
     company_repo = CompanyRepository(session)
-    company = await company_repo.get(user.id, data.company_id)
-    if company is None:
-        raise NotFoundError(f"Company {data.company_id} not found")
+    if data.company_id is not None:
+        company = await company_repo.get(user.id, data.company_id)
+        if company is None:
+            raise NotFoundError(f"Company {data.company_id} not found")
+        company_id = company.id
+    else:
+        # data.company_name is guaranteed non-None by the schema validator.
+        assert data.company_name is not None
+        existing = await company_repo.get_by_name(user.id, data.company_name)
+        if existing is not None:
+            company_id = existing.id
+        else:
+            created = await company_repo.create(
+                user.id,
+                CompanyCreate(name=data.company_name),
+            )
+            company_id = created.id
 
     repo = ApplicationRepository(session)
-    application = await repo.create(user.id, data)
+    application = await repo.create(user.id, data, company_id=company_id)
     return ApplicationRead.model_validate(application)
 
 

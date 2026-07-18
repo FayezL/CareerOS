@@ -10,7 +10,12 @@ from careeros_api.errors import NotFoundError
 from careeros_api.models.user import User
 from careeros_api.repositories.company import CompanyRepository
 from careeros_api.schemas.common import PageOut
-from careeros_api.schemas.company import CompanyCreate, CompanyRead, CompanyUpdate
+from careeros_api.schemas.company import (
+    CompanyCreate,
+    CompanyOption,
+    CompanyRead,
+    CompanyUpdate,
+)
 
 
 async def list_companies(
@@ -25,6 +30,21 @@ async def list_companies(
     repo = CompanyRepository(session)
     items, next_cursor = await repo.list(user.id, limit=limit, cursor=cursor, q=q)
     return PageOut(items=[CompanyRead.model_validate(c) for c in items], next_cursor=next_cursor)
+
+
+async def search_companies(
+    session: AsyncSession,
+    user: User,
+    *,
+    q: str,
+    limit: int = 8,
+) -> list[CompanyOption]:
+    """Prefix-match autocomplete for the company picker on the application form."""
+    if not q.strip():
+        return []
+    repo = CompanyRepository(session)
+    rows = await repo.search(user.id, q=q.strip(), limit=limit)
+    return [CompanyOption.model_validate(c) for c in rows]
 
 
 async def get_company(session: AsyncSession, user: User, company_id: uuid.UUID) -> CompanyRead:

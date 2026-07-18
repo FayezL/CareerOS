@@ -14,7 +14,10 @@ import os
 _DEFAULTS: dict[str, str] = {
     "ENV": "local",
     "LOG_LEVEL": "WARNING",
-    "DATABASE_URL": "postgresql+asyncpg://careeros:careeros@localhost:5432/careeros",
+    # Port 5433 matches docker-compose.yml (host port remapped to avoid the
+    # native Windows Postgres on 5432). Override via real DATABASE_URL env if
+    # running tests against a different database.
+    "DATABASE_URL": "postgresql+asyncpg://careeros:careeros@localhost:5433/careeros",
     "CLERK_ISSUER": "https://example.clerk.accounts.dev",
     "CLERK_JWKS_URL": "https://example.clerk.accounts.dev/.well-known/jwks.json",
     "CORS_ORIGINS": "http://localhost:3000",

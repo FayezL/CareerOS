@@ -6,7 +6,7 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from careeros_api.schemas.company import CompanyRead
 from careeros_api.schemas.pipeline import PipelineStageRead
@@ -29,9 +29,24 @@ class ApplicationBase(BaseModel):
 
 
 class ApplicationCreate(ApplicationBase):
-    """Payload to create an application (``company_id`` + ``role_title`` required)."""
+    """Payload to create an application.
 
-    company_id: uuid.UUID
+    The company may be supplied either as an existing ``company_id`` or as a
+    free-text ``company_name`` (when the user types a new company in the
+    combobox). Exactly one must be present; if only a name is given the service
+    layer auto-creates the company (reusing an existing same-name row).
+    """
+
+    company_id: uuid.UUID | None = None
+    company_name: str | None = Field(default=None, min_length=1, max_length=255)
+
+    @model_validator(mode="after")
+    def _exactly_one_company_ref(self) -> ApplicationCreate:
+        if self.company_id is None and not self.company_name:
+            raise ValueError("Either company_id or company_name must be provided.")
+        if self.company_id is not None and self.company_name:
+            raise ValueError("Provide either company_id or company_name, not both.")
+        return self
 
 
 class ApplicationUpdate(BaseModel):

@@ -8,7 +8,12 @@ from fastapi import APIRouter, Query, Response, status
 
 from careeros_api.api.deps import CurrentUserDep, SessionDep
 from careeros_api.schemas.common import PageOut
-from careeros_api.schemas.company import CompanyCreate, CompanyRead, CompanyUpdate
+from careeros_api.schemas.company import (
+    CompanyCreate,
+    CompanyOption,
+    CompanyRead,
+    CompanyUpdate,
+)
 from careeros_api.services import company as company_service
 
 router = APIRouter(prefix="/companies", tags=["companies"])
@@ -26,6 +31,17 @@ async def list_companies(
     return await company_service.list_companies(
         session, current_user, limit=limit, cursor=cursor, q=q
     )
+
+
+@router.get("/search", response_model=list[CompanyOption])
+async def search_companies(
+    session: SessionDep,
+    current_user: CurrentUserDep,
+    q: str = Query(..., min_length=1, max_length=255),
+    limit: int = Query(8, ge=1, le=20),
+) -> list[CompanyOption]:
+    """Prefix-match autocomplete for the company picker on the application form."""
+    return await company_service.search_companies(session, current_user, q=q, limit=limit)
 
 
 @router.post("", response_model=CompanyRead, status_code=status.HTTP_201_CREATED)

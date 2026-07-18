@@ -72,9 +72,23 @@ class ApplicationRepository(BaseRepository[Application]):
         """Return an application with its company eager-loaded (alias of :meth:`get`)."""
         return await self.get(user_id, application_id)
 
-    async def create(self, user_id: uuid.UUID, data: ApplicationCreate) -> Application:
-        """Insert a new application owned by ``user_id``."""
-        application = Application(user_id=user_id, **data.model_dump())
+    async def create(
+        self,
+        user_id: uuid.UUID,
+        data: ApplicationCreate,
+        *,
+        company_id: uuid.UUID,
+    ) -> Application:
+        """Insert a new application owned by ``user_id``.
+
+        ``company_id`` is passed explicitly (rather than read from ``data``)
+        because the service resolves it from either ``company_id`` or a
+        newly-created / reused-by-name company. The carrier fields
+        ``company_id`` / ``company_name`` are excluded from the dump since they
+        are not Application columns.
+        """
+        payload = data.model_dump(exclude={"company_id", "company_name"})
+        application = Application(user_id=user_id, company_id=company_id, **payload)
         self.session.add(application)
         await self.session.flush()
         return await self._reload(application.id)
