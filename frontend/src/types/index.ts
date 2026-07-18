@@ -84,10 +84,10 @@ export interface PipelineStage {
 export interface StageHistory {
   id: string
   application_id: string
-  to_stage_id: string
+  from_stage: StageRef | null
   to_stage: StageRef
+  changed_at: string
   note: string | null
-  occurred_at: string
 }
 
 /** The type of an interview event. */

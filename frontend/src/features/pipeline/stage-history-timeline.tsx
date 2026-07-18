@@ -28,7 +28,7 @@ export function StageHistoryTimeline({ history }: StageHistoryTimelineProps) {
           <div className="flex flex-wrap items-baseline justify-between gap-x-3">
             <span className="text-sm font-medium">{entry.to_stage.name}</span>
             <time className="font-mono text-xs text-muted-foreground">
-              {formatTimestamp(entry.occurred_at)}
+              {formatTimestamp(entry.changed_at)}
             </time>
           </div>
           {entry.note ? <p className="mt-1 text-sm text-muted-foreground">{entry.note}</p> : null}
