@@ -1,5 +1,6 @@
 import { Briefcase } from "lucide-react"
 
+import { CommandPalette } from "@/components/command-palette"
 import { NewMenu } from "@/components/new-menu"
 import { Sidebar } from "@/components/layout/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -31,6 +32,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="flex h-16 items-center justify-between gap-4 border-b px-4 sm:px-6">
           <span className="font-semibold md:hidden">CareerOS</span>
           <div className="ml-auto flex items-center gap-3">
+            <div className="hidden sm:block">
+              <CommandPalette />
+            </div>
             <NewMenu />
             <ThemeToggle />
             <UserButton afterSignOutUrl="/" />
