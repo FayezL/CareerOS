@@ -84,7 +84,16 @@ export default async function ApplicationDetailPage({ params }: PageProps) {
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">{application.role_title}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span>{application.company?.name ?? "Unknown company"}</span>
+          {application.company ? (
+            <Link
+              href={`/companies/${application.company.id}`}
+              className="font-medium text-foreground hover:underline"
+            >
+              {application.company.name}
+            </Link>
+          ) : (
+            <span>Unknown company</span>
+          )}
           {application.stage && (
             <>
               <span aria-hidden>·</span>

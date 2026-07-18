@@ -1,6 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
+import Link from "next/link"
 import { Building2, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -105,7 +106,11 @@ function CompanyRow({ company }: { company: Company }) {
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{company.name}</TableCell>
+      <TableCell className="font-medium">
+        <Link href={`/companies/${company.id}`} className="hover:underline">
+          {company.name}
+        </Link>
+      </TableCell>
       <TableCell>{company.industry ?? "—"}</TableCell>
       <TableCell>{company.size ?? "—"}</TableCell>
       <TableCell>{company.location ?? "—"}</TableCell>

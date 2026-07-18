@@ -79,6 +79,11 @@ export async function listCompanies(): Promise<Company[]> {
   return unwrapList(data)
 }
 
+/** Fetch a single company by id. */
+export async function getCompany(id: string): Promise<Company> {
+  return apiFetch<Company>(`/companies/${id}`)
+}
+
 /** Prefix-match autocomplete for the company picker (used by the combobox). */
 export async function searchCompanies(query: string): Promise<CompanyOption[]> {
   const q = query.trim()
@@ -87,9 +92,10 @@ export async function searchCompanies(query: string): Promise<CompanyOption[]> {
   return data
 }
 
-/** Fetch the authenticated user's applications. */
-export async function listApplications(): Promise<Application[]> {
-  const data = await apiFetch<PageOut<Application> | Application[]>("/applications")
+/** Fetch the authenticated user's applications, optionally scoped to a company. */
+export async function listApplications(params?: { companyId?: string }): Promise<Application[]> {
+  const qs = params?.companyId ? `?company_id=${encodeURIComponent(params.companyId)}` : ""
+  const data = await apiFetch<PageOut<Application> | Application[]>(`/applications${qs}`)
   return unwrapList(data)
 }
 
@@ -112,9 +118,10 @@ export async function listStages(): Promise<PipelineStage[]> {
   return unwrapList(data)
 }
 
-/** Fetch the user's contacts. */
-export async function listContacts(): Promise<Contact[]> {
-  const data = await apiFetch<PageOut<Contact> | Contact[]>("/contacts")
+/** Fetch the user's contacts, optionally scoped to a company. */
+export async function listContacts(params?: { companyId?: string }): Promise<Contact[]> {
+  const qs = params?.companyId ? `?company_id=${encodeURIComponent(params.companyId)}` : ""
+  const data = await apiFetch<PageOut<Contact> | Contact[]>(`/contacts${qs}`)
   return unwrapList(data)
 }
 
