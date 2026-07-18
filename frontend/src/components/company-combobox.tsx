@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Building2, Check, Plus, Search } from "lucide-react"
 
-import { searchCompanies } from "@/services/api-client"
+import { searchCompaniesAction } from "@/services/company-actions"
 import type { CompanyOption } from "@/types"
 import { cn } from "@/utils/cn"
 import { Input } from "@/components/ui/input"
@@ -63,7 +63,7 @@ export function CompanyCombobox({
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       try {
-        const rows = await searchCompanies(q)
+        const rows = await searchCompaniesAction(q)
         setResults(rows)
         setActive(0)
       } catch {
