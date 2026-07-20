@@ -18,12 +18,17 @@ from careeros_api.schemas.pipeline import (
 )
 
 _DEFAULT_STAGES: list[tuple[str, int]] = [
-    ("Applied", 0),
-    ("Screening", 1),
-    ("Interview", 2),
-    ("Offer", 3),
-    ("Accepted", 4),
-    ("Rejected", 5),
+    # The redesign pipeline (v2): a complete funnel from bookmark through
+    # signed offer. Old users keep their existing stages; this only seeds
+    # first-time users. "Saved" replaces the need for a separate wishlist.
+    ("Saved", 0),
+    ("Preparing", 1),
+    ("Applied", 2),
+    ("Recruiter Contacted", 3),
+    ("Interview", 4),
+    ("Offer", 5),
+    ("Accepted", 6),
+    ("Rejected", 7),
 ]
 
 

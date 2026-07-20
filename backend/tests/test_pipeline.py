@@ -35,9 +35,19 @@ async def test_default_stages_seeded(
     headers = auth()
     stages = await _stages(client, headers)
     names = [s["name"] for s in stages]
-    assert names == ["Applied", "Screening", "Interview", "Offer", "Accepted", "Rejected"]
+    # v2 redesign pipeline (8 stages, Saved-first).
+    assert names == [
+        "Saved",
+        "Preparing",
+        "Applied",
+        "Recruiter Contacted",
+        "Interview",
+        "Offer",
+        "Accepted",
+        "Rejected",
+    ]
     assert all(s["is_default"] for s in stages)
-    assert [s["position"] for s in stages] == [0, 1, 2, 3, 4, 5]
+    assert [s["position"] for s in stages] == [0, 1, 2, 3, 4, 5, 6, 7]
 
 
 async def test_stage_crud(client: AsyncClient, auth: AuthHeaders, require_db: None) -> None:
@@ -48,7 +58,8 @@ async def test_stage_crud(client: AsyncClient, auth: AuthHeaders, require_db: No
     assert created.status_code == 201, created.text
     stage = created.json()
     assert stage["name"] == "Team Match"
-    assert stage["position"] == 6
+    # Custom stages append after the 8 defaults.
+    assert stage["position"] == 8
     assert stage["color"] == "#fbbf24"
 
     patched = await client.patch(
@@ -75,7 +86,7 @@ async def test_reorder_stages(client: AsyncClient, auth: AuthHeaders, require_db
     assert response.status_code == 200, response.text
     reordered = response.json()
     assert [s["id"] for s in reordered] == reversed_ids
-    assert [s["position"] for s in reordered] == [0, 1, 2, 3, 4, 5]
+    assert [s["position"] for s in reordered] == [0, 1, 2, 3, 4, 5, 6, 7]
 
 
 async def test_reorder_rejects_partial_set(

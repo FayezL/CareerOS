@@ -65,9 +65,13 @@ async def test_funnel(client: AsyncClient, auth: AuthHeaders, require_db: None) 
     response = await client.get("/api/v1/analytics/funnel", headers=headers)
     assert response.status_code == 200, response.text
     stages = {s["name"]: s for s in response.json()["stages"]}
+    # v2 redesign pipeline (8 stages). The funnel lists all of the caller's
+    # stages in position order regardless of whether applications reached them.
     assert [s["name"] for s in response.json()["stages"]] == [
+        "Saved",
+        "Preparing",
         "Applied",
-        "Screening",
+        "Recruiter Contacted",
         "Interview",
         "Offer",
         "Accepted",

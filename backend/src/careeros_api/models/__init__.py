@@ -15,6 +15,8 @@ from careeros_api.models.note import Note
 from careeros_api.models.pipeline_stage import PipelineStage
 from careeros_api.models.reminder import Reminder
 from careeros_api.models.subscription import Subscription
+from careeros_api.models.tag import Tag
+from careeros_api.models.timeline_event import TimelineEvent
 from careeros_api.models.user import User
 
 __all__ = [
@@ -28,5 +30,7 @@ __all__ = [
     "PipelineStage",
     "Reminder",
     "Subscription",
+    "Tag",
+    "TimelineEvent",
     "User",
 ]
