@@ -29,6 +29,23 @@ function compact(entries: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(entries).filter(([, v]) => v !== undefined))
 }
 
+function tagValues(formData: FormData): string[] {
+  // FormData emits one entry per hidden input named "tags"; collect all
+  // non-empty values and dedupe case-insensitively (the backend re-resolves,
+  // but de-duping here keeps the request clean).
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const value of formData.getAll("tags")) {
+    const name = String(value).trim()
+    if (!name) continue
+    const key = name.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(name)
+  }
+  return out
+}
+
 function buildApplicationPayload(formData: FormData): Record<string, unknown> {
   return compact({
     company_id: textValue(formData, "company_id"),
@@ -42,6 +59,7 @@ function buildApplicationPayload(formData: FormData): Record<string, unknown> {
     salary_currency: textValue(formData, "salary_currency"),
     applied_at: textValue(formData, "applied_at"),
     job_description: textValue(formData, "job_description"),
+    tags: tagValues(formData),
   })
 }
 

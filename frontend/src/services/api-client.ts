@@ -15,6 +15,7 @@ import type {
   PipelineStage,
   Reminder,
   StageHistory,
+  Tag,
 } from "@/types"
 
 /**
@@ -90,6 +91,11 @@ export async function searchCompanies(query: string): Promise<CompanyOption[]> {
   if (!q) return []
   const data = await apiFetch<CompanyOption[]>(`/companies/search?q=${encodeURIComponent(q)}`)
   return data
+}
+
+/** Fetch the caller's tag library (seeds curated defaults on first access). */
+export async function listTags(): Promise<Tag[]> {
+  return apiFetch<Tag[]>("/tags")
 }
 
 /** Fetch the authenticated user's applications, optionally scoped to a company. */

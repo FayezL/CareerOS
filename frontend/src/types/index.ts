@@ -45,6 +45,21 @@ export interface CompanyOption {
   location: string | null
 }
 
+/** A user-owned tag (Remote, Visa Sponsorship, Python, …). */
+export interface Tag {
+  id: string
+  name: string
+  color: string | null
+  created_at: string
+}
+
+/** Minimal tag reference embedded on application reads. */
+export interface TagRef {
+  id: string
+  name: string
+  color: string | null
+}
+
 /** A single job application. */
 export interface Application {
   id: string
@@ -64,6 +79,8 @@ export interface Application {
   salary_currency: string | null
   applied_at: string | null
   job_description: string | null
+  /** Tags attached to the application (Remote, Visa, Python, …). */
+  tags: TagRef[]
   created_at: string
   updated_at: string
 }

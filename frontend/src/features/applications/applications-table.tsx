@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table"
 
 import { ApplicationForm } from "./application-form"
+import { TagBadges } from "./tag-badges"
 import { deleteApplication } from "./actions"
 
 type ApplicationsTableProps = {
@@ -57,6 +58,7 @@ export function ApplicationsTable({ applications, companies }: ApplicationsTable
                 <TableHead>Role</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Tags</TableHead>
                 <TableHead>Applied</TableHead>
                 <TableHead className="w-[96px] text-right">Actions</TableHead>
               </TableRow>
@@ -119,7 +121,12 @@ function ApplicationRow({
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{application.role_title}</TableCell>
+      <TableCell className="font-medium">
+        <div className="space-y-1">
+          <div>{application.role_title}</div>
+          {application.tags.length > 0 && <TagBadges tags={application.tags} size="compact" />}
+        </div>
+      </TableCell>
       <TableCell>{companyName}</TableCell>
       <TableCell>
         <StatusBadge status={application.status} />

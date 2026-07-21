@@ -11,6 +11,7 @@ from careeros_api.models.user import User
 from careeros_api.repositories.application import ApplicationRepository
 from careeros_api.repositories.company import CompanyRepository
 from careeros_api.repositories.pipeline import PipelineStageRepository
+from careeros_api.repositories.tag import TagRepository
 from careeros_api.schemas.application import (
     ApplicationCreate,
     ApplicationRead,
@@ -90,6 +91,12 @@ async def create_application(
 
     repo = ApplicationRepository(session)
     application = await repo.create(user.id, data, company_id=company_id)
+    # Resolve tag names → Tag rows (creating as needed), then attach.
+    if data.tags:
+        tag_repo = TagRepository(session)
+        tags = await tag_repo.resolve_names(user.id, data.tags)
+        application.tags = tags
+        await session.flush()
     return ApplicationRead.model_validate(application)
 
 
@@ -105,6 +112,11 @@ async def update_application(
     if application is None:
         raise NotFoundError(f"Application {application_id} not found")
     updated = await repo.update(application, data)
+    # When tag names are supplied (even an empty list), replace the tag set.
+    if data.tags is not None:
+        tag_repo = TagRepository(session)
+        updated.tags = await tag_repo.resolve_names(user.id, data.tags)
+        await session.flush()
     return ApplicationRead.model_validate(updated)
 
 

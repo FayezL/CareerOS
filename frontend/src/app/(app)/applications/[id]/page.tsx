@@ -10,6 +10,7 @@ import { ApplicationForm } from "@/features/applications/application-form"
 import { ApplicationTimeline } from "@/features/applications/application-timeline"
 import { ApplicationDetails } from "@/features/applications/application-details"
 import { ApplicationStatusBadge } from "@/features/applications/status-badge"
+import { TagBadges } from "@/features/applications/tag-badges"
 import { DocumentsPanel } from "@/features/documents/documents-panel"
 
 export const dynamic = "force-dynamic"
@@ -120,6 +121,7 @@ export default async function ApplicationDetailPage({ params }: PageProps) {
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         )}
+        {application.tags.length > 0 && <TagBadges tags={application.tags} className="pt-1" />}
       </header>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.6fr_1fr]">

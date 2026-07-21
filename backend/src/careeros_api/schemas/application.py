@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from careeros_api.schemas.company import CompanyRead
 from careeros_api.schemas.pipeline import PipelineStageRead
+from careeros_api.schemas.tag import TagRef
 
 ApplicationStatus = Literal["active", "archived", "rejected", "accepted"]
 
@@ -39,6 +40,10 @@ class ApplicationCreate(ApplicationBase):
 
     company_id: uuid.UUID | None = None
     company_name: str | None = Field(default=None, min_length=1, max_length=255)
+    # Tag names — auto-resolved to existing tags (case-insensitive) or created
+    # on the fly. Sent as names rather than ids so the form's combobox never
+    # needs a pre-flight create step.
+    tags: list[str] | None = None
 
     @model_validator(mode="after")
     def _exactly_one_company_ref(self) -> ApplicationCreate:
@@ -53,6 +58,7 @@ class ApplicationUpdate(BaseModel):
     """Partial update for an application; every field is optional."""
 
     company_id: uuid.UUID | None = None
+    company_name: str | None = Field(default=None, min_length=1, max_length=255)
     role_title: str | None = Field(default=None, min_length=1, max_length=255)
     status: ApplicationStatus | None = None
     job_url: str | None = Field(default=None, max_length=2048)
@@ -62,6 +68,9 @@ class ApplicationUpdate(BaseModel):
     salary_max: int | None = Field(default=None, ge=0)
     salary_currency: str | None = Field(default=None, min_length=3, max_length=3)
     applied_at: date | None = None
+    # When present (even if empty), the application's tags are replaced with the
+    # resolved set. Omit the field to leave tags untouched.
+    tags: list[str] | None = None
 
 
 class ApplicationRead(BaseModel):
@@ -83,5 +92,6 @@ class ApplicationRead(BaseModel):
     applied_at: date | None
     company: CompanyRead | None = None
     current_stage: PipelineStageRead | None = None
+    tags: list[TagRef] = []
     created_at: datetime
     updated_at: datetime

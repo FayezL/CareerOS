@@ -49,14 +49,22 @@ class ApplicationRepository(BaseRepository[Application]):
             limit=limit,
             cursor=cursor,
             filters_builder=build_filters,
-            options=[selectinload(Application.company), selectinload(Application.current_stage)],
+            options=[
+                selectinload(Application.company),
+                selectinload(Application.current_stage),
+                selectinload(Application.tags),
+            ],
         )
 
     async def get(self, user_id: uuid.UUID, application_id: uuid.UUID) -> Application | None:
         """Return the application if it exists, belongs to ``user_id``, and is not deleted."""
         stmt = (
             select(Application)
-            .options(selectinload(Application.company), selectinload(Application.current_stage))
+            .options(
+                selectinload(Application.company),
+                selectinload(Application.current_stage),
+                selectinload(Application.tags),
+            )
             .where(
                 Application.id == application_id,
                 Application.user_id == user_id,
@@ -87,7 +95,7 @@ class ApplicationRepository(BaseRepository[Application]):
         ``company_id`` / ``company_name`` are excluded from the dump since they
         are not Application columns.
         """
-        payload = data.model_dump(exclude={"company_id", "company_name"})
+        payload = data.model_dump(exclude={"company_id", "company_name", "tags"})
         application = Application(user_id=user_id, company_id=company_id, **payload)
         self.session.add(application)
         await self.session.flush()
@@ -95,7 +103,14 @@ class ApplicationRepository(BaseRepository[Application]):
 
     async def update(self, application: Application, data: ApplicationUpdate) -> Application:
         """Apply a partial update to ``application`` using only provided fields."""
-        for field, value in data.model_dump(exclude_unset=True).items():
+        # `tags` (resolved by the service via the relationship) and
+        # `company_name` (carrier field handled by the service) are not
+        # Application columns and must be excluded from the setattr dump.
+        payload = data.model_dump(
+            exclude_unset=True,
+            exclude={"tags", "company_name"},
+        )
+        for field, value in payload.items():
             setattr(application, field, value)
         await self.session.flush()
         return await self._reload(application.id)
@@ -146,7 +161,11 @@ class ApplicationRepository(BaseRepository[Application]):
         """Re-fetch an application with its relations eager-loaded."""
         stmt = (
             select(Application)
-            .options(selectinload(Application.company), selectinload(Application.current_stage))
+            .options(
+                selectinload(Application.company),
+                selectinload(Application.current_stage),
+                selectinload(Application.tags),
+            )
             .where(Application.id == application_id)
         )
         result = await self.session.execute(stmt)

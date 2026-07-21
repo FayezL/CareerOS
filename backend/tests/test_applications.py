@@ -266,3 +266,51 @@ async def test_company_search_is_user_scoped(
     results = await client.get("/api/v1/companies/search?q=Acm", headers=headers_b)
     assert results.status_code == 200
     assert results.json() == []
+
+
+async def test_create_application_with_tags_auto_resolves(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    """Tag names on create are auto-resolved/created and returned on read."""
+    headers = auth()
+    # Pre-create one tag so we can verify case-insensitive reuse.
+    await client.post("/api/v1/tags", headers=headers, json={"name": "Python"})
+
+    create = await client.post(
+        "/api/v1/applications",
+        headers=headers,
+        json={
+            "company_name": "Vercel",
+            "role_title": "Eng",
+            "tags": ["python", "Remote", "Brand New Tag"],
+        },
+    )
+    assert create.status_code == 201, create.text
+    tag_names = sorted(t["name"] for t in create.json()["tags"])
+    # "python" reused the existing "Python"; the other two were created.
+    assert tag_names == ["Brand New Tag", "Python", "Remote"]
+
+    # The new tags now exist in the user's tag library.
+    tags = await client.get("/api/v1/tags", headers=headers)
+    assert "Brand New Tag" in {t["name"] for t in tags.json()}
+
+
+async def test_update_application_replaces_tags(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    headers = auth()
+    create = await client.post(
+        "/api/v1/applications",
+        headers=headers,
+        json={"company_name": "Acme", "role_title": "Eng", "tags": ["A", "B"]},
+    )
+    app_id = create.json()["id"]
+
+    patched = await client.patch(
+        f"/api/v1/applications/{app_id}",
+        headers=headers,
+        json={"tags": ["B", "C"]},  # drop A, keep B, add C
+    )
+    assert patched.status_code == 200, patched.text
+    tag_names = sorted(t["name"] for t in patched.json()["tags"])
+    assert tag_names == ["B", "C"]

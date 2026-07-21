@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { CompanyCombobox } from "@/components/company-combobox"
+import { TagInput } from "@/components/tag-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -220,6 +221,14 @@ function ApplicationFormFields({ application, onClose }: ApplicationFormFieldsPr
             placeholder="Paste the role description for quick reference."
             defaultValue={application?.job_description ?? ""}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="tags">Tags</Label>
+          <TagInput defaultTags={application?.tags?.map((t) => t.name) ?? []} />
+          <p className="text-xs text-muted-foreground">
+            Filter and analyse by attributes like Remote, Visa Sponsorship, Python, Europe…
+          </p>
         </div>
 
         <DialogFooter>
