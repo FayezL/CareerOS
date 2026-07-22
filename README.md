@@ -227,6 +227,7 @@ v2. The full plan lives in [`docs/REDESIGN_ROADMAP.md`](docs/REDESIGN_ROADMAP.md
 
 ## 📚 Documentation
 
+- **[Engineering case study (PROCESS.md)](PROCESS.md)** — architecture decisions, debugging case studies, and methodology. **Read this for the "how" behind the "what."**
 - [Product spec](docs/PRODUCT.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Database design](docs/DATABASE.md)
