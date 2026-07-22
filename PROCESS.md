@@ -1,254 +1,126 @@
-# Engineering Case Study — CareerOS
+# CareerOS — Project Status & Vision
 
-> How CareerOS was architected, debugged, and shipped. Written as an engineering
-> record for portfolio review — this documents the *process and judgment*, not
-> the feature list (see [README.md](README.md) for that).
-
----
-
-## The thesis
-
-Most "job tracker" portfolio projects are CRUD apps: a forms-over-tables UI
-glued to an ORM. I set out to build the opposite — a **production-shaped SaaS**
-where every layer (schema, API, auth, frontend, infra) is engineered the way a
-real startup team would ship it: strongly typed, tested, indexed, paginated,
-isolated per tenant, and verifiable.
-
-The bar wasn't "it works" — it was **"can I prove it works, and can I prove
-*why* the design is sound."**
+> A full-stack **Job Application Tracker & Career Management platform** I'm
+> building as a portfolio flagship. This document tracks what's shipped, what's
+> planned, and where the project is headed.
+>
+> ⚠️ **This is a work in progress.** The roadmap below reflects my current
+> thinking — features, priorities, and scope **will change** as the project
+> evolves. Nothing here is a final commitment; it's a direction.
 
 ---
 
-## Architecture decisions (and the trade-offs)
+## What this project is
 
-### 1. A separate FastAPI backend instead of Next.js Route Handlers
+CareerOS is a single place to run an entire job search: track applications from
+bookmark to signed offer, manage companies and contacts, log every interaction
+on a timeline, and surface analytics that actually help you adjust course.
+It's built to **production SaaS standards** — strongly typed, tested, indexed,
+paginated, per-user isolated, and containerised — not a CRUD demo.
 
-**Decision:** Next.js for the frontend only; a standalone async FastAPI service
-for the API.
-
-**Why:** Route Handlers couple the API to the Node process and to JavaScript.
-A Python backend gives clean async SQLAlchemy 2, first-class Pydantic v2
-validation, OpenAPI for free, and a language ecosystem (uv, mypy, pytest)
-that I wanted for the data layer. It also forces a **real network boundary**
-between client and server — which is where production auth actually lives.
-
-**Trade-off acknowledged:** two deploy targets (Vercel + Railway) and a
-network hop the frontend must cross. Worth it for the separation of concerns
-and the typing story.
-
-### 2. SQLAlchemy 2 + Alembic, not Prisma
-
-**Decision:** Hand-written ORM models + hand-written, numbered migrations.
-
-**Why:** Prisma's generator hides SQL. For a project where **indexes are the
-performance story**, I needed to reason about (and verify) exactly what hits
-the database — composite indexes, keyset pagination cursors, FK indexing gaps
-in Postgres, `ondelete` cascades. You can't `EXPLAIN ANALYZE` what you can't
-see.
-
-**Trade-off:** more code than Prisma. Accepted because the whole point was to
-demonstrate database engineering competence.
-
-### 3. Clerk JWT forwarded as a Bearer token, verified by hand
-
-**Decision:** Clerk issues the JWT from the frontend; the FastAPI backend
-verifies the RS256 signature against Clerk's published JWKS (cached with a
-TTL), checks the `iss` claim, requires `exp`/`iss`/`sub`, and resolves the
-local `User` row — **no magic SDK on the backend.**
-
-**Why:** I wanted to actually understand the auth flow, not call
-`@clerk/express` and hope. The verification is ~130 lines and readable. It
-also means the backend is provider-agnostic — swapping Clerk for Auth0 or
-Cognito is a JWKS-URL change.
-
-**Trade-off:** more code than a middleware import. Accepted because "I can
-debug auth" is a claim this project backs up (see the debugging section).
-
-### 4. Per-user multi-tenancy, hard-scoped
-
-**Decision:** every tenant-scoped table carries `user_id`; every repository
-query filters by it; cross-user isolation is tested explicitly.
-
-**Why:** v1 has no orgs/teams, so the isolation primitive is the user. Getting
-this right at the repository layer means a route can't accidentally leak data
-even if it tries — the scope is structural, not a convention someone remembers.
-
-### 5. Clean architecture on the backend, feature-based on the frontend
-
-**Decision:** `routes → services → repositories → models` (dependencies point
-inward only). Frontend modules under `features/<feature>/` with shared
-primitives in `components/`.
-
-**Why:** each layer is independently testable and replaceable. Routes are thin
-(parse, call service, return typed DTO). Services own transactions + auth
-context. Repositories own data access + pagination. Nothing reaches across.
+**Stack:** Next.js 15 (App Router, React, TypeScript) · FastAPI (Python, async,
+SQLAlchemy 2, Alembic) · PostgreSQL 16 · Clerk auth · Docker Compose.
 
 ---
 
-## Debugging case studies
+## ✅ What's done so far
 
-These are the bugs that taught the most. Each was solved by **finding the root
-cause before touching a fix** — never by guess-and-check.
+### Core platform (v1)
+- **Auth** — Clerk JWT issued by the frontend, verified against Clerk's JWKS on
+  the FastAPI backend (hand-written RS256 verification, not an SDK). Per-user
+  data isolation on every query.
+- **Clean-architecture backend** — `routes → services → repositories → models`,
+  Pydantic v2 validation, 9 hand-written Alembic migrations, 14 tables, 36+
+  indexes, keyset (cursor) pagination on every list endpoint.
+- **Feature-based frontend** — Server Components for data, Server Actions for
+  mutations, shadcn/ui, dark-mode-first, feature modules under `features/`.
+- **Quality bar** — 122 backend tests (0 failing), `mypy --strict` clean,
+  `tsc --strict` + eslint clean, Conventional Commits throughout.
+- **Docker Compose** one-command dev environment (db + backend + frontend).
 
-### Case 1: "fetch failed" on every page after login
-
-**Symptom:** the user signed in successfully (Clerk session created, 1 user +
-1 company in the DB), but every authenticated page showed "Couldn't load
-applications." Backend logs showed **zero requests arriving**.
-
-**Investigation:** I instrumented both sides — a `console.log` in the frontend
-`apiFetch` and a structured log on the backend's auth-failure handler. The
-frontend log proved `getToken()` returned a token (`hasToken: true`), but the
-backend still saw nothing. The response time on the failed calls was ~0ms.
-
-**Root cause:** Server Components run **inside the frontend Docker container**.
-The api-client fetched `http://localhost:8000` — but inside that container,
-`localhost:8000` is the container itself (connection refused), not the host's
-backend. The fetch never left the container.
-
-**Fix:** introduced `API_INTERNAL_URL` (`http://backend:8000/api/v1`, the
-Docker-network hostname) for server-side fetches, keeping `NEXT_PUBLIC_API_URL`
-(`localhost:8000`) for the browser. One env var, documented in the compose
-file. ([commit `f2e0ebc`](https://github.com/FayezL/Job-Dashboard/commit/f2e0ebc))
-
-**Lesson:** in SSR + containers, the server and the browser live in different
-network namespaces. The URL that's correct for one is wrong for the other.
-
-### Case 2: every list endpoint was doing an in-memory sort
-
-**Symptom:** pagination worked, but I noticed no index matched the keyset
-query's `ORDER BY created_at DESC, id DESC`.
-
-**Investigation:** I ran `EXPLAIN ANALYZE` against 5,000 seeded rows. The plan
-showed `Seq Scan → Sort (quickstore, 25kB)` — Postgres materialised every row
-the user owned, sorted them in memory, then applied LIMIT. O(n log n) per
-page, growing with the user's history.
-
-**Fix:** a migration adding `(user_id, created_at DESC, id DESC)` composite
-indexes to the 6 paginated tables that lacked them. Re-ran `EXPLAIN ANALYZE`:
-now an `Index Scan` that walks the index in order and **stops at LIMIT** — 21
-rows touched, 3 buffer hits, **0.077ms** execution. ([commit `a58d933`](https://github.com/FayezL/Job-Dashboard/commit/a58d933))
-
-**Lesson:** "it works" and "it scales" are different claims. The first is
-obvious; the second needs `EXPLAIN`.
-
-### Case 3: the test suite was silently destroying real data
-
-**Symptom:** after running the backend tests, the user's signed-in session
-vanished — 0 users in the DB.
-
-**Investigation:** the test `conftest.py` truncated every table before each
-test for isolation. It connected to the same Postgres the app used
-(`localhost:5432`, later `5433`). So "run the tests" meant "wipe the dev
-database." The skip-when-unreachable guard meant this failed *silently* — DB
-tests just showed as skipped, masking the problem.
-
-**Fix (in flight):** a dedicated test database (or embedded Postgres) so the
-truncate-for-isolation can never touch real data. The immediate mitigation is
-operational: never run the host test suite against the Docker dev DB; run it
-inside the backend container instead (where it hits `db:5432` cleanly).
-
-**Lesson:** test isolation and test-target selection are security concerns, not
-just convenience. A fixture that truncates is a footgun aimed at your data.
-
-### Case 4: the landing page 404'd for anonymous visitors
-
-**Symptom:** `GET /` returned a 404 instead of the marketing landing page —
-but only for logged-out users, and only after Clerk was wired up.
-
-**Root cause:** the Clerk middleware protected **every** route except
-`/sign-in` and `/sign-up`. The root page (`app/page.tsx`) is a public landing
-page that does its own `auth()` check + redirect, but the middleware blocked
-anonymous visitors before the page ran. `auth.protect()` then rendered the
-not-found boundary instead of redirecting.
-
-**Fix:** added `/` to the public-route matcher — one line. Verified `GET /`
-returns 200 with the landing content for anonymous visitors. ([commit `31e9e96`](https://github.com/FayezL/Job-Dashboard/commit/31e9e96))
-
-**Lesson:** middleware runs before your page. A route can be "public-by-design"
-in code and "protected-by-accident" in middleware.
+### Workflow redesign (in progress)
+- **Application-centric create** — type a company name → it auto-creates or
+  reuses the company. No "create a company first" prerequisite.
+- **Application workspace** — a detail page with a narrative **timeline**
+  (Applied → stage transitions → offer/rejection), a details sidebar, and
+  documents.
+- **Company dashboards** — `/companies/[id]` answers "what's my history with
+  this company?" (applications, stats, contacts).
+- **Home dashboard** — `/dashboard` with headline metrics, follow-up banner,
+  and recent activity.
+- **⌘K command palette** — global search across applications, companies, and
+  contacts.
+- **Application tags** — Remote, Visa Sponsorship, Python, Europe… inline
+  multi-select with auto-create; the filtering + analytics axis.
+- **Split-screen branded auth** — custom-styled Clerk sign-in/sign-up.
+- **New 8-stage pipeline** — Saved → Preparing → Applied → Recruiter Contacted
+  → Interview → Offer → Accepted → Rejected.
 
 ---
 
-## Performance engineering
+## 🔨 What I'm building next (current focus)
 
-| Concern | Approach | Evidence |
-|---|---|---|
-| List endpoints scale | Keyset (cursor) pagination, not offset | `BaseRepository.list_paginated` — `(created_at DESC, id DESC)` cursor, `LIMIT n+1` to detect `has_more` |
-| Pagination is index-backed | Composite index on the keyset per table | `EXPLAIN ANALYZE`: Index Scan, 3 buffers, 0.077ms @ 5k rows |
-| Foreign keys don't seq-scan | Postgres doesn't auto-index FKs — I added them | 36+ indexes across 14 tables, declared on both ORM + migration |
-| N+1 on serialised relations | `selectinload` where a list embeds relations | `Application.company`, `.current_stage`, `.tags` eager-loaded |
-| Backend connection churn | `NullPool` in tests (fresh loop per test); `QueuePool` in prod | env-aware pool in `db/session.py` |
+These are the features I'm actively working on. **Order and scope may shift.**
 
----
-
-## Quality methodology
-
-**Evidence before assertions.** I never claim a task is done without running
-the verification and pasting the output. The standard before closing any task:
-
-- Backend: `uv run --extra dev pytest` passes, `ruff check .` clean,
-  `mypy src` (strict) clean.
-- Frontend: `pnpm lint` clean, `pnpm typecheck` clean.
-- Migrations: `alembic upgrade head` applies; ORM models and migrations agree
-  on indexes/constraints.
-- Per-user isolation holds (no cross-user leak; `user_id` scoped + tested).
-
-**Strict typing everywhere.** `mypy --strict` on 93 backend files; `strict`
-tsconfig on the frontend. No `any`, no untyped dicts for domain data.
-
-**Conventional Commits with scopes** (`fix(docker):`, `perf(db):`,
-`feat(frontend):`, `feat(api):`) — the history reads as a changelog.
+- **Custom timeline events** — beyond stage changes: Email Sent, Follow-up,
+  Phone Screen, Take-home, System Design, Recruiter Viewed, and user-defined
+  custom events. The workspace timeline becomes the full story of an
+  application.
+- **Rejection reasons** — structured capture (Visa, Salary, Experience, Culture
+  Fit, Position Filled, No Feedback, Other) when an application is rejected,
+  fed into analytics.
+- **Document Manager** — replaces the basic documents section with categorised
+  files: resumes, cover letters, certificates, references, visa documents.
+- **Resume & Cover-Letter versioning** — link each application to the resume
+  and cover letter version used, then track interview rate / offer rate /
+  response rate **per version**.
+- **Dream Companies** — save and prioritise companies you want to work for
+  before applying (careers page, priority, applied-or-not).
 
 ---
 
-## By the numbers
+## 🗺 Future roadmap (longer-term vision)
 
-| Metric | Value |
-|---|---|
-| Commits | 27 |
-| Alembic migrations | 9 (hand-written, upgrade + downgrade tested) |
-| Database tables / indexes | 14 / 36+ |
-| Backend source files (Python) | 93 |
-| Frontend source files (TS/TSX) | 97 |
-| Backend tests | 122 passing, 0 failing |
-| Lint / type coverage | ruff clean · mypy strict clean · eslint clean · tsc strict clean |
-| API surface | 14 routers, all cursor-paginated, all auth-gated |
-| Redesign phases shipped | 6 of 10 (v1 core complete; v2 workflow redesign in progress) |
+These are the bigger features I want to explore once the core workflow is
+complete. **All of this is provisional — I expect the plan to change as I learn
+what's most valuable.**
 
----
-
-## What I'd do differently
-
-- **Test-database isolation from day one.** The truncate-against-dev-DB footgun
-  should have been designed out early (dedicated `careeros_test` DB or embedded
-  Postgres), not discovered when it wiped real data.
-- **The WSL2 ↔ Windows filesystem** makes Next.js production builds slow/flaky
-  on this dev machine. A native-Linux dev box or devcontainer would have saved
-  real time across the project.
-- **Screenshot the UI as I ship each phase.** I built five redesign phases
-  before pausing for visual verification — fine for velocity, but a
-  screenshot-per-phase gallery would strengthen the portfolio.
+- **Expanded analytics** — applications by country and source, response rate
+  by source/country, resume & cover-letter performance, most common rejection
+  reasons, most successful technologies, average response time.
+- **Career goals** — set targets ("apply to 150 jobs", "reach 200 recruiters",
+  "get 15 interviews") and track progress on the dashboard.
+- **Weekly review** — an auto-generated summary of the past 7 days:
+  applications sent, interviews, rejections, offers, follow-ups needed, goal
+  progress.
+- **AI insights** — *deferred until enough real data exists.* The AI should
+  analyse the user's actual history and surface patterns ("Resume V3 performs
+  27% better", "most interview requests arrive within 8 days"), never generate
+  placeholder copy.
+- **LinkedIn networking module** — track connections, recruiters by country,
+  pending/accepted invitations, messages sent vs replies. A flagship feature,
+  but depends on deciding the data-source approach (manual logging vs import).
+- **Browser extension** — one-click job import from LinkedIn, Greenhouse,
+  Lever, and Workday (company, role, URL, description, salary, location).
 
 ---
 
-## How to read the engineering trail
+## 📌 A note on scope
 
-The commit history is the most honest record. Notable entries, newest first:
+This is a **personal portfolio project**, not a funded startup. I'm building
+it to demonstrate end-to-end engineering competence — architecture decisions,
+database design, auth, testing, debugging, and product thinking. The feature
+list above is ambitious on purpose: it reflects what a complete product *would*
+be, and I'll ship as much of it as the learning (and the portfolio story)
+justifies.
 
-- `db6e015` F1 application tags (auto-resolve + seeding + 122 tests)
-- `0ef7381` v2 foundation migration (tags, timeline events, rejection reasons)
-- `f2bbdeb` ⌘K command palette (global search across entities)
-- `a58d933` **keyset-pagination composite indexes** (the EXPLAIN ANALYZE win)
-- `f2e0ebc` **API_INTERNAL_URL** (the Docker SSR networking fix)
-- `31e9e96` Clerk public-route fix (landing-page 404)
-- `7d47898` DB test isolation + 3 runtime bugs found via real-PG verification
-- `b418633` feature-based frontend refactor + dark-mode theming
-
-Full context for each lives in the commit messages.
+The most honest single sentence about the state of things: **the foundation is
+production-quality and tested; the product surface is growing steadily; the
+roadmap is a direction, not a contract.**
 
 ---
 
-*Built and documented by [FayezL](https://github.com/FayezL). The product
-README is [here](README.md); the full v2 redesign plan is in
-[docs/REDESIGN_ROADMAP.md](docs/REDESIGN_ROADMAP.md).*
+*Built by [FayezL](https://github.com/FayezL). See the
+[main README](README.md) for the product overview and quickstart, and
+[docs/REDESIGN_ROADMAP.md](docs/REDESIGN_ROADMAP.md) for the detailed phased
+plan.*
