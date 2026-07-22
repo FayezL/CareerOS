@@ -15,8 +15,9 @@
 CareerOS is a single place to run an entire job search: track applications from
 bookmark to signed offer, manage companies and contacts, log every interaction
 on a timeline, and surface analytics that actually help you adjust course.
-It's built to **production SaaS standards** — strongly typed, tested, indexed,
-paginated, per-user isolated, and containerised — not a CRUD demo.
+It's a **portfolio project** — engineered to a high standard (strongly typed,
+tested, indexed, paginated, per-user isolated, containerised) but **not a
+deployed product.** It runs locally via Docker Compose; nothing is live.
 
 **Stack:** Next.js 15 (App Router, React, TypeScript) · FastAPI (Python, async,
 SQLAlchemy 2, Alembic) · PostgreSQL 16 · Clerk auth · Docker Compose.
@@ -114,9 +115,9 @@ list above is ambitious on purpose: it reflects what a complete product *would*
 be, and I'll ship as much of it as the learning (and the portfolio story)
 justifies.
 
-The most honest single sentence about the state of things: **the foundation is
-production-quality and tested; the product surface is growing steadily; the
-roadmap is a direction, not a contract.**
+The most honest single sentence about the state of things: **the codebase is
+well-engineered and tested; the product surface is growing steadily; it is not
+deployed; the roadmap is a direction, not a contract.**
 
 ---
 

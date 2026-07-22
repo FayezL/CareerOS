@@ -1,14 +1,14 @@
 # CareerOS
 
-> A production-grade, full-stack **Job Application Tracker & Career Management
-> platform** for software engineers. Track every application from bookmark to
-> signed offer, organise your network, and surface the opportunities that
-> actually move you forward — all in one fast, dark-mode-first workspace.
+> A full-stack **Job Application Tracker & Career Management platform** for
+> software engineers — a portfolio project built to a high engineering standard.
+> Track every application from bookmark to signed offer, organise your network,
+> and surface the opportunities that actually move you forward — all in one
+> fast, dark-mode-first workspace.
 
-CareerOS is built to **production SaaS standards**, not as a tutorial or CRUD
-demo. Every layer — schema, API, auth, frontend — is engineered the way a real
-startup team would ship it: strongly typed, tested, indexed, paginated, and
-containerised.
+CareerOS is engineered the way real production software is built — strongly
+typed, tested, indexed, paginated, and containerised — but it is **a portfolio
+project, not a deployed product.** It runs locally via Docker Compose.
 
 ---
 
@@ -46,11 +46,11 @@ containerised.
 | **Database** | PostgreSQL 16 |
 | **Auth** | Clerk (`@clerk/nextjs` + `@clerk/ui` with a shadcn theme) |
 | **Dev infra** | Docker Compose (db + backend + frontend) · pnpm · uv |
-| **Deploy target** | Vercel (frontend) + Railway (backend + Postgres) |
+| **Deploy** | **Not yet deployed.** Planned target: Vercel (frontend) + Railway (backend + Postgres) |
 
-External providers (Firebase Storage, Stripe, LLM, email) live behind provider
-interfaces with **mock/noop** implementations — real keys are optional and
-gitignored.
+External providers (Firebase Storage, Stripe, LLM, email) are **currently
+mocked** behind provider interfaces — real keys are optional and gitignored.
+They are not integrated with live services.
 
 ---
 
@@ -135,7 +135,8 @@ cd frontend && pnpm install && pnpm dev
 
 ## 🧪 Quality bar
 
-This isn't a "works on my machine" project. Verification is built in:
+This isn't a "works on my machine" project. Verification is built in and the
+numbers below are real (run the commands yourself):
 
 | Check | Command | Result |
 |---|---|---|
@@ -159,8 +160,9 @@ This isn't a "works on my machine" project. Verification is built in:
   tsconfig on the frontend. No `any`, no untyped dicts for domain data.
 - **Per-user isolation**: every tenant-scoped table carries `user_id`; every
   query is user-scoped. Tested with cross-user isolation cases.
-- **Provider-interface pattern**: Firebase/Stripe/LLM/email are mockable by
-  design — real keys never hardcoded, never committed.
+- **Provider-interface pattern:** Firebase/Stripe/LLM/email are **currently
+  mocked** (noop implementations) — the interfaces exist so real keys could be
+  dropped in, but no live service is integrated today.
 
 ---
 
