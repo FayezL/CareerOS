@@ -90,6 +90,8 @@ class ApplicationRead(BaseModel):
     salary_max: int | None
     salary_currency: str | None
     applied_at: date | None
+    rejection_reason: str | None = None
+    rejection_reason_category: str | None = None
     company: CompanyRead | None = None
     current_stage: PipelineStageRead | None = None
     tags: list[TagRef] = []
