@@ -24,6 +24,7 @@ from careeros_api.api.v1.routes import (
     pipeline,
     reminders,
     tags,
+    timeline_events,
 )
 from careeros_api.core.config import settings
 from careeros_api.core.logging import configure_logging
@@ -76,6 +77,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics.router, prefix="/api/v1")
     app.include_router(reminders.router, prefix="/api/v1")
     app.include_router(tags.router, prefix="/api/v1")
+    app.include_router(timeline_events.router, prefix="/api/v1")
     app.include_router(ai.router, prefix="/api/v1")
     app.include_router(billing.router, prefix="/api/v1")
 
