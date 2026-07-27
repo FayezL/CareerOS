@@ -10,6 +10,55 @@
 /** The lifecycle states an application can be in. */
 export type ApplicationStatus = "active" | "archived" | "rejected" | "accepted"
 
+/** The type of a timeline event. */
+export type TimelineEventType =
+  | "APPLIED"
+  | "EMAIL"
+  | "CALL"
+  | "FOLLOW_UP"
+  | "PHONE_SCREEN"
+  | "TECHNICAL"
+  | "SYSTEM_DESIGN"
+  | "ONSITE"
+  | "TAKE_HOME"
+  | "RECRUITER_MESSAGE"
+  | "OFFER"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "NOTE"
+  | "CUSTOM"
+
+/** The importance level of a timeline event. */
+export type TimelineImportance = "NORMAL" | "HIGH" | "CRITICAL"
+
+/** A single timeline event tied to an application. */
+export interface TimelineEvent {
+  id: string
+  application_id: string
+  event_type: TimelineEventType
+  summary: string | null
+  note: string | null
+  occurred_at: string
+  importance: TimelineImportance
+  follow_up_date: string | null
+  source: string
+  created_at: string
+  updated_at: string
+}
+
+/** Payload for creating a timeline event. */
+export interface TimelineEventCreate {
+  application_id: string
+  event_type: TimelineEventType
+  summary: string | null
+  note: string | null
+  occurred_at: string | null
+  importance?: TimelineImportance
+  source?: string
+  follow_up_date?: string | null
+  rejection_reason_category?: string | null
+}
+
 /** A minimal company reference embedded on related resources. */
 export interface CompanyRef {
   id: string

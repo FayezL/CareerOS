@@ -16,6 +16,8 @@ import type {
   Reminder,
   StageHistory,
   Tag,
+  TimelineEvent,
+  TimelineEventCreate,
 } from "@/types"
 
 /**
@@ -143,6 +145,28 @@ export async function listNotes(applicationId: string): Promise<Note[]> {
     `/notes?application_id=${encodeURIComponent(applicationId)}`,
   )
   return unwrapList(data)
+}
+
+/** Fetch timeline events for a given application (oldest-first). */
+export async function listTimelineEvents(applicationId: string): Promise<TimelineEvent[]> {
+  const data = await apiFetch<TimelineEvent[]>(
+    `/timeline-events?application_id=${encodeURIComponent(applicationId)}`,
+  )
+  return data
+}
+
+/** Create a new timeline event. */
+export async function createTimelineEvent(payload: TimelineEventCreate): Promise<TimelineEvent> {
+  return apiFetch<TimelineEvent>("/timeline-events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+}
+
+/** Hard-delete a timeline event by id. */
+export async function deleteTimelineEvent(id: string): Promise<void> {
+  return apiFetch<void>(`/timeline-events/${id}`, { method: "DELETE" })
 }
 
 /** Fetch documents attached to a given application. */
