@@ -1,10 +1,8 @@
 "use client"
 
-import { ArrowRight, FileText, Send } from "lucide-react"
-
 import type { Application, StageHistory, Interview, Note, TimelineEvent } from "@/types"
 import { cn } from "@/utils/cn"
-import { buildTimeline, type TimelineItem } from "@/features/workspace/lib/timeline"
+import { buildTimeline } from "@/features/workspace/lib/timeline"
 import { DeleteEventDialog } from "@/features/workspace/components/delete-event-dialog"
 import { AddEventForm } from "@/features/workspace/components/add-event-form"
 
