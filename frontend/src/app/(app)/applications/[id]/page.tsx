@@ -2,8 +2,15 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowLeft, ExternalLink, History, Pencil } from "lucide-react"
 
-import { getApplication, listDocuments, listStageHistory } from "@/services/api-client"
-import type { Application, Document, StageHistory } from "@/types"
+import {
+  getApplication,
+  listDocuments,
+  listStageHistory,
+  listInterviews,
+  listNotes,
+  listTimelineEvents,
+} from "@/services/api-client"
+import type { Application, Document, StageHistory, Interview, Note, TimelineEvent } from "@/types"
 import { Button } from "@/components/ui/button"
 import { ErrorState } from "@/components/error-state"
 import { ApplicationForm } from "@/features/applications/application-form"
@@ -30,6 +37,9 @@ export default async function ApplicationDetailPage({ params }: PageProps) {
   let application: Application | null = null
   let documents: Document[] = []
   let history: StageHistory[] = []
+  let interviews: Interview[] = []
+  let notes: Note[] = []
+  let timelineEvents: TimelineEvent[] = []
   let errorMessage: string | null = null
 
   try {
@@ -40,11 +50,25 @@ export default async function ApplicationDetailPage({ params }: PageProps) {
   }
 
   if (application) {
-    // History + documents are non-fatal; the workspace still renders without them.
     try {
       history = await listStageHistory(id)
     } catch {
       // empty timeline is fine
+    }
+    try {
+      interviews = await listInterviews()
+    } catch {
+      // empty interviews is fine
+    }
+    try {
+      notes = await listNotes(id)
+    } catch {
+      // empty notes is fine
+    }
+    try {
+      timelineEvents = await listTimelineEvents(id)
+    } catch {
+      // empty timeline events is fine
     }
     try {
       documents = await listDocuments(id)
@@ -132,7 +156,16 @@ export default async function ApplicationDetailPage({ params }: PageProps) {
               Timeline
             </h2>
           </div>
-          <ApplicationTimeline application={application} history={history} />
+          <ApplicationTimeline
+            application={application}
+            history={history}
+            interviews={interviews.filter((i) => i.application_id === id)}
+            notes={notes}
+            timelineEvents={timelineEvents}
+            onRefresh={async () => {
+              // This is a client-side trigger - the page will reload on the next navigation
+            }}
+          />
         </section>
 
         <div className="space-y-8">
