@@ -36,7 +36,8 @@ migrations, real auth, tested code, and a UI that doesn't feel like a tutorial.
 - **Type a company name** → it auto-creates or reuses the company. No separate
   "create a company first" step.
 - **Application workspace** — each application has a narrative **timeline**
-  (Applied → stage moves → offer/rejection), details, and documents.
+  (Applied → stage moves → offer/rejection) with custom events, importance
+  levels, rejection reasons, and details.
 - **Company pages** — see your full history with a company: how many
   applications, how many offers/rejections, who your contacts there are.
 - **Dashboard** — "how is my search going?" with key numbers and recent activity.
@@ -47,12 +48,25 @@ migrations, real auth, tested code, and a UI that doesn't feel like a tutorial.
 
 ---
 
+## Recently completed
+
+- **Custom Timeline Events (F2)** — Full implementation of custom activity events
+  including:
+  - Native enum event types (Email, Call, Take-home, Recruiter Message, etc.)
+  - Importance levels (Normal, Important, Milestone)
+  - Follow-up date tracking for next actions
+  - Rejection reason sync when events are marked "Rejected"
+  - Chronological merge with stage history, interviews, and notes
+  - Server-side validation and user isolation
+
+---
+
 ## What I'm working on next
 
 These are the features I'm currently building. **Order and scope may shift.**
 
 - **Custom timeline events** — Email, Call, Follow-up, Take-home, Recruiter
-  Viewed, and user-defined events (not just stage changes).
+  Viewed, and user-defined events with importance levels (not just stage changes).
 - **Rejection reasons** — structured capture (Visa, Salary, Experience, etc.)
   for analytics.
 - **Document Manager** — resumes, cover letters, certificates, references.
