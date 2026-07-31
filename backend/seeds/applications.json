@@ -1,0 +1,48 @@
+[
+  {
+    "role": "Senior Software Engineer",
+    "salary_min": 180000,
+    "salary_max": 220000,
+    "status": "INTERVIEW",
+    "source": "LinkedIn",
+    "company_name": "TechCorp Solutions",
+    "description": "Exciting opportunity at TechCorp Solutions as a Senior Software Engineer"
+  },
+  {
+    "role": "Staff Backend Engineer",
+    "salary_min": 200000,
+    "salary_max": 250000,
+    "status": "APPLIED",
+    "source": "Wellfound",
+    "company_name": "FinServe Global",
+    "description": "Exciting opportunity at FinServe Global as a Staff Backend Engineer"
+  },
+  {
+    "role": "Engineering Manager",
+    "salary_min": 240000,
+    "salary_max": 300000,
+    "status": "SAVED",
+    "source": "Referral",
+    "company_name": "HealthTech Innovations",
+    "description": "Exciting opportunity at HealthTech Innovations as an Engineering Manager"
+  },
+  {
+    "role": "Full Stack Developer",
+    "salary_min": 150000,
+    "salary_max": 190000,
+    "status": "REJECTED",
+    "source": "Company Website",
+    "company_name": "RetailFlow Inc",
+    "description": "Exciting opportunity at RetailFlow Inc as a Full Stack Developer",
+    "rejection_reason_category": "EXPERIENCE"
+  },
+  {
+    "role": "DevOps Engineer",
+    "salary_min": 170000,
+    "salary_max": 210000,
+    "status": "OFFER",
+    "source": "Indeed",
+    "company_name": "DataSpark Labs",
+    "description": "Exciting opportunity at DataSpark Labs as a DevOps Engineer"
+  }
+]

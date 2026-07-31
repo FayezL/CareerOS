@@ -1,0 +1,32 @@
+[
+  {
+    "name": "TechCorp Solutions",
+    "website": "https://techcorp.example.com",
+    "type": "Tech",
+    "description": "Leading cloud infrastructure provider"
+  },
+  {
+    "name": "FinServe Global",
+    "website": "https://finserve.example.com",
+    "type": "Finance",
+    "description": "Global financial services platform"
+  },
+  {
+    "name": "HealthTech Innovations",
+    "website": "https://healthtech.example.com",
+    "type": "Healthcare",
+    "description": "AI-powered healthcare solutions"
+  },
+  {
+    "name": "RetailFlow Inc",
+    "website": "https://retailflow.example.com",
+    "type": "Retail",
+    "description": "E-commerce optimization platform"
+  },
+  {
+    "name": "DataSpark Labs",
+    "website": "https://dataspark.example.com",
+    "type": "Startup",
+    "description": "Data analytics startup for SMBs"
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "event_type": "EMAIL",
+    "summary": "Initial phone screen with HR",
+    "note": "Good conversation, discussed project experience",
+    "occurred_at": "2026-07-15T10:00:00Z",
+    "importance": "NORMAL",
+    "follow_up_date": "2026-07-22T10:00:00Z",
+    "source": "user"
+  },
+  {
+    "event_type": "PHONE_SCREEN",
+    "summary": "Technical interview with engineering team",
+    "note": "Challenging technical questions about database design",
+    "occurred_at": "2026-07-17T14:00:00Z",
+    "importance": "IMPORTANT",
+    "follow_up_date": "2026-07-24T14:00:00Z",
+    "source": "user"
+  },
+  {
+    "event_type": "SYSTEM_DESIGN",
+    "summary": "System design interview scheduled",
+    "note": "Need to prepare for system design round",
+    "occurred_at": "2026-07-20T10:00:00Z",
+    "importance": "MILESTONE",
+    "follow_up_date": null,
+    "source": "user"
+  },
+  {
+    "event_type": "ONSITE",
+    "summary": "On-site interview completed",
+    "note": "Positive feedback from all interviewers",
+    "occurred_at": "2026-07-24T09:00:00Z",
+    "importance": "MILESTONE",
+    "follow_up_date": "2026-07-31T09:00:00Z",
+    "source": "user"
+  },
+  {
+    "event_type": "OFFER",
+    "summary": "Offer discussion and negotiation",
+    "note": "Competitive compensation package discussed",
+    "occurred_at": "2026-07-26T15:00:00Z",
+    "importance": "MILESTONE",
+    "follow_up_date": "2026-08-02T15:00:00Z",
+    "source": "user"
+  },
+  {
+    "event_type": "CALL",
+    "summary": "Follow-up call about next steps",
+    "note": "Team seems well-organized and collaborative",
+    "occurred_at": "2026-07-18T11:00:00Z",
+    "importance": "NORMAL",
+    "follow_up_date": "2026-07-25T11:00:00Z",
+    "source": "user"
+  },
+  {
+    "event_type": "RECRUITER_MESSAGE",
+    "summary": "Recruiter reached out about opportunity",
+    "note": "Strong interest in my background with distributed systems",
+    "occurred_at": "2026-07-12T16:00:00Z",
+    "importance": "NORMAL",
+    "follow_up_date": null,
+    "source": "user"
+  },
+  {
+    "event_type": "TAKE_HOME",
+    "summary": "Take-home assignment received",
+    "note": "Assignment focuses on API design and performance",
+    "occurred_at": "2026-07-19T09:00:00Z",
+    "importance": "IMPORTANT",
+    "follow_up_date": "2026-07-26T09:00:00Z",
+    "source": "user"
+  },
+  {
+    "event_type": "REJECTED",
+    "summary": "Application rejected",
+    "note": "Role aligns well with career goals but timing doesn't work out",
+    "occurred_at": "2026-07-21T17:00:00Z",
+    "importance": "MILESTONE",
+    "follow_up_date": null,
+    "source": "user"
+  },
+  {
+    "event_type": "NOTE",
+    "summary": "Research notes about company",
+    "note": "Recruiter mentioned potential for rapid growth",
+    "occurred_at": "2026-07-13T10:00:00Z",
+    "importance": "NORMAL",
+    "follow_up_date": null,
+    "source": "user"
+  }
+]

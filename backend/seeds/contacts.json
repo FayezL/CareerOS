@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Sarah Johnson",
+    "email": "sarah.johnson@techcorp.example.com",
+    "role": "Recruiter",
+    "company_name": "TechCorp Solutions",
+    "phone": "+1-415-555-0123"
+  },
+  {
+    "name": "Michael Chen",
+    "email": "michael.chen@techcorp.example.com",
+    "role": "Engineering Manager",
+    "company_name": "TechCorp Solutions",
+    "phone": "+1-415-555-0456"
+  },
+  {
+    "name": "Emily Rodriguez",
+    "email": "emily.rodriguez@finglobal.example.com",
+    "role": "Recruiter",
+    "company_name": "FinServe Global",
+    "phone": "+1-212-555-0789"
+  },
+  {
+    "name": "David Kim",
+    "email": "david.kim@healthtech.example.com",
+    "role": "Technical Lead",
+    "company_name": "HealthTech Innovations",
+    "phone": "+1-650-555-0321"
+  },
+  {
+    "name": "Jessica Williams",
+    "email": "jessica.williams@retailflow.example.com",
+    "role": "HR",
+    "company_name": "RetailFlow Inc",
+    "phone": "+1-206-555-0654"
+  },
+  {
+    "name": "Robert Brown",
+    "email": "robert.brown@dataspark.example.com",
+    "role": "Engineering Manager",
+    "company_name": "DataSpark Labs",
+    "phone": "+1-512-555-0987"
+  }
+]
