@@ -68,6 +68,10 @@ class ApplicationUpdate(BaseModel):
     salary_max: int | None = Field(default=None, ge=0)
     salary_currency: str | None = Field(default=None, min_length=3, max_length=3)
     applied_at: date | None = None
+    # Rejection capture — editable from the workspace after a move. Setting
+    # either to ``None`` clears it (use ``exclude_unset=True`` semantics).
+    rejection_reason: str | None = Field(default=None, max_length=255)
+    rejection_reason_category: str | None = None
     # When present (even if empty), the application's tags are replaced with the
     # resolved set. Omit the field to leave tags untouched.
     tags: list[str] | None = None
