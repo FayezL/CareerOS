@@ -31,6 +31,16 @@ export type TimelineEventType =
 /** The importance level of a timeline event. */
 export type TimelineImportance = "NORMAL" | "HIGH" | "CRITICAL"
 
+/** Structured reason an application was rejected. */
+export type RejectionReasonCategory =
+  | "visa_sponsorship"
+  | "lack_of_experience"
+  | "salary"
+  | "culture_fit"
+  | "position_filled"
+  | "no_feedback"
+  | "other"
+
 /** A single timeline event tied to an application. */
 export interface TimelineEvent {
   id: string
@@ -127,6 +137,8 @@ export interface Application {
   salary_max: number | null
   salary_currency: string | null
   applied_at: string | null
+  rejection_reason: string | null
+  rejection_reason_category: RejectionReasonCategory | null
   job_description: string | null
   /** Tags attached to the application (Remote, Visa, Python, …). */
   tags: TagRef[]
