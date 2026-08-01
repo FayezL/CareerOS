@@ -135,17 +135,31 @@ async def move_application(
     application_id: uuid.UUID,
     data: MoveStageRequest,
 ) -> ApplicationRead:
-    """Move an application to a different stage, recording the transition."""
+    """Move an application to a different stage, recording the transition.
+
+    When the target stage's name is ``"Rejected"`` (case-insensitive) and the
+    caller supplied rejection fields, they are written onto the application so
+    analytics and the workspace timeline can surface them.
+    """
     app_repo = ApplicationRepository(session)
     application = await app_repo.get(user.id, application_id)
     if application is None:
         raise NotFoundError(f"Application {application_id} not found")
 
     stage_repo = PipelineStageRepository(session)
-    if await stage_repo.get(user.id, data.to_stage_id) is None:
+    target_stage = await stage_repo.get(user.id, data.to_stage_id)
+    if target_stage is None:
         raise NotFoundError(f"Pipeline stage {data.to_stage_id} not found")
 
     moved = await app_repo.move(application, data.to_stage_id, data.note)
+
+    if target_stage.name.strip().lower() == "rejected":
+        if data.rejection_reason_category is not None:
+            moved.rejection_reason_category = data.rejection_reason_category
+        if data.rejection_reason is not None:
+            moved.rejection_reason = data.rejection_reason
+        await session.flush()
+
     await session.refresh(moved, attribute_names=["company", "current_stage"])
     return ApplicationRead.model_validate(moved)
 
