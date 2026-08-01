@@ -1,263 +1,199 @@
 # F3 Rejection Reasons Design Spec
 
-> **Goal:** Enable structured capture and display of rejection reasons when applications are rejected, integrated with timeline events and displayed in both pipeline move dialogs and application workspaces.
+> **Goal:** Enable structured capture and display of rejection reasons when
+> applications are rejected — both during pipeline stage moves and after the
+> fact from the application workspace.
 
-## Context
+## Current State (verified against codebase)
 
-Based on user preferences from brainstorming:
-- **Scope:** Basic rejection reasons capture
-- **Input Locations:** Both pipeline move dialog and application workspace
-- **Storage:** Timeline-only approach (leverage existing REJECTED timeline events)
-- **Categories:** Keep existing enum (visa_sponsorship, lack_of_experience, salary, culture_fit, position_filled, no_feedback, other)
-- **Display:** Both timeline integration and dedicated workspace section
-- **Validation:** Optional capture (category and reason text both optional)
+**What already exists:**
+- ✅ `applications` table has `rejection_reason` (text) + `rejection_reason_category`
+  (native enum: visa_sponsorship, lack_of_experience, salary, culture_fit,
+  position_filled, no_feedback, other)
+- ✅ Timeline events `create_event` service syncs category to `applications`
+  table when a REJECTED event is created (but does NOT persist the category on
+  the event itself — the repository excludes it)
+- ✅ `TimelineEventCreate` schema accepts `rejection_reason_category` and
+  validates it is only set for REJECTED events
+- ✅ Pipeline move endpoint (`POST /applications/{id}/move`) exists but only
+  records stage history — it does NOT touch rejection fields or create timeline
+  events
+- ✅ Frontend `StageMoveSelect` and `KanbanBoard` drag-and-drop call
+  `moveApplication` directly with no dialog/modal
 
-## Current State
+**Gaps to fill:**
+1. No way to capture rejection reason during a pipeline move to Rejected
+2. No way to edit rejection reasons after the fact from the workspace
+3. No rejection reason display in the timeline or workspace
+4. The category is accepted on timeline event create but never read back
+   (`TimelineEventRead` omits it, and it isn't persisted on the row)
 
-**Existing Infrastructure:**
-- ✅ Timeline events system (F2) with REJECTED event type
-- ✅ Applications table has `rejection_reason_category` enum field
-- ✅ Timeline events support custom summary, note, and importance levels
-- ✅ Pipeline stage move functionality exists
-- ✅ Application workspace UI with timeline display
+## Architecture Decision: Single Source of Truth
 
-**Gaps to Fill:**
-- Rejection reason capture during pipeline stage moves
-- Rejection reason editing in application workspace
-- Display rejection reasons in timeline with category badges
-- Dedicated rejection section in workspace
-- Backend support for rejection metadata in timeline events
+**The `applications` table is the source of truth for rejection data.**
 
-## Architecture
+Rationale:
+- The columns already exist and are indexed for analytics
+- Analytics queries already target `applications.rejection_reason_category`
+- Adding a redundant column to `timeline_events` creates two sources of truth
+  and bidirectional sync complexity
+- The timeline displays rejection info by reading from the application, not
+  by parsing event payloads
 
-### Data Model Approach: Timeline-Only
+**Consequence:** The timeline event create flow's existing category sync
+(storing on `applications`) stays as-is. We do NOT add
+`rejection_reason_category` to the `TimelineEvent` model. The category lives
+on the application; the timeline event carries only its `summary`/`note` text.
 
-Leverage the existing timeline events system to store rejection details:
-
-**Timeline Event Enhancement:**
-- When application moves to Rejected stage → Create REJECTED timeline event
-- Store rejection reason category in event metadata or separate field
-- Store free-text rejection reason in event `note` field
-- Use existing `summary` field for display ("Rejected — [Category]")
-
-**Rationale:**
-- Avoids schema changes to applications table
-- Maintains chronological history (rejection is an event)
-- Leverages existing timeline infrastructure
-- Enables analytics via timeline event queries
-- Cleaner separation of concerns
-
-### Backend Components
-
-**Enhanced Timeline Events:**
-- Add `rejection_reason_category` field to TimelineEvent model (nullable)
-- Update timeline event creation logic for REJECTED events
-- Ensure rejection reasons sync from timeline to applications table
-
-**Application Service Updates:**
-- Update stage change logic to capture rejection reasons
-- Add rejection reason editing capabilities
-- Maintain backward compatibility
-
-### Frontend Components
-
-**Pipeline Move Dialog Enhancement:**
-- Add rejection reason capture when moving to Rejected stage
-- Category dropdown with existing enum values
-- Optional free-text reason field
-- Clean integration with existing move dialog
-
-**Application Workspace Enhancement:**
-- Add rejection details section (shown when status = rejected)
-- Edit rejection reasons post-rejection
-- Display rejection timeline entry with category badge
-
-**Timeline Display:**
-- Show REJECTED events with category badges
-- Display reason text in timeline note
-- Maintain chronological ordering
-
-## User Flow
-
-### Primary Flow: Pipeline Move to Rejected
-
-1. User drags application to "Rejected" stage in pipeline
-2. Dialog appears with stage change confirmation
-3. **NEW:** Rejection reason section appears:
-   - Category dropdown (optional)
-   - Free-text reason field (optional)
-4. User can either:
-   - Skip rejection reason capture
-   - Select category only
-   - Select category + add reason text
-5. On confirmation:
-   - Application status updates to rejected
-   - REJECTED timeline event created with rejection details
-   - Rejection reason synced to applications table
-
-### Secondary Flow: Edit Rejection Reasons
-
-1. User opens application workspace for rejected application
-2. **NEW:** Rejection details section shows current rejection info
-3. User can edit category and/or reason text
-4. Changes update:
-   - Existing REJECTED timeline event
-   - Applications table rejection fields
-   - Timeline display updates immediately
-
-### Display Flow: Timeline Integration
-
-1. Timeline shows REJECTED event with:
-   - Category badge (color-coded)
-   - Summary: "Rejected — [Category Name]"
-   - Note: Free-text rejection reason (if provided)
-2. Category badges use consistent color scheme
-3. Hover shows full rejection details
-
-## Technical Requirements
+## Components
 
 ### Backend
 
-**TimelineEvent Model Updates:**
-```python
-class TimelineEvent(UUIDPrimaryKey, TimestampMixin, Base):
-    # Existing fields...
-    rejection_reason_category: Mapped[str | None] = mapped_column(
-        rejection_reason_category,  # Reuse existing enum
-        nullable=True
-    )
-```
+**1. Extend the pipeline move endpoint to capture rejection data**
 
-**Service Layer:**
-- Update `create_event` to handle rejection category
-- Ensure REJECTED events can be updated
-- Add `update_rejection_reason` method
+`MoveStageRequest` schema gains two optional fields:
+- `rejection_reason_category: str | None = None`
+- `rejection_reason: str | None = None` (free text, max 255 chars)
 
-**API Endpoints:**
-- Timeline events API already supports category field
-- No new endpoints needed
+`move_application` service: when the target stage's name (case-insensitive,
+trimmed) is "rejected", and either field is provided, write them onto the
+application row. When moving AWAY from a rejected stage, the fields remain
+(an application can be rejected then reopened — we don't auto-clear; clearing
+is explicit via the workspace edit).
+
+**2. Allow editing rejection fields via application update**
+
+`ApplicationUpdate` schema already exists. Add `rejection_reason` and
+`rejection_reason_category` as optional updatable fields if not already
+present (verify in implementation). The `update_application` service applies
+them. This powers the workspace edit flow.
+
+**3. No new tables, no migration**
+
+All columns already exist. This is pure service/schema/UI work.
 
 ### Frontend
 
-**TypeScript Types:**
-```typescript
-interface TimelineEvent {
-  // Existing fields...
-  rejection_reason_category?: RejectionReasonCategory;
-}
+**1. Rejection capture on pipeline move (when target is "Rejected")**
 
-type RejectionReasonCategory =
-  | "visa_sponsorship"
-  | "lack_of_experience"
-  | "salary"
-  | "culture_fit"
-  | "position_filled"
-  | "no_feedback"
-  | "other";
+The current move UX is a `<Select>` dropdown (workspace) and drag-and-drop
+(Kanban). We add a **rejection dialog** that appears when the target stage is
+"Rejected" (matched by stage name, case-insensitive):
+
+- `StageMoveSelect` (workspace): intercept the change; if target is Rejected,
+  open a dialog before calling `moveApplication`. Dialog contains:
+  - Category `<Select>` (optional, with "No reason" placeholder)
+  - Free-text `<Textarea>` for reason (optional)
+  - "Move to Rejected" / "Skip" buttons
+- `KanbanBoard` drag-and-drop: on drop into a Rejected column, open the same
+  dialog before finalising the move. The optimistic update is reverted if the
+  user cancels.
+
+The `moveApplication` server action gains optional
+`rejection_reason_category` and `rejection_reason` params, forwarded to the
+backend move endpoint.
+
+**2. Rejection details section in application workspace**
+
+A new component `<RejectionDetails>` shown only when
+`application.rejection_reason_category` is non-null (or
+`application.status === "rejected"`). Displays:
+- Category badge (color-coded)
+- Free-text reason (if present)
+- "Edit" affordance opening an inline form (category select + textarea) that
+  calls `updateApplication` and revalidates the workspace
+
+**3. Timeline display of rejection**
+
+The `buildTimeline()` merge already handles stage history and timeline
+events. We enhance the stage-history entry rendering: when a history entry's
+`to_stage.name` is "Rejected", and the application has a rejection category,
+append a category badge + reason text below the entry. This reads from the
+`application` object passed into the timeline (single source of truth), not
+from the event row.
+
+## Data Flow
+
+### Pipeline move to Rejected
+```
+User drops/selects Rejected
+  → Rejection dialog opens
+  → User picks category (optional) + reason (optional)
+  → moveApplication(applicationId, stageId, { category, reason })
+  → POST /applications/{id}/move { to_stage_id, rejection_reason_category, rejection_reason }
+  → backend: app_repo.move(...) records stage history
+  → backend: if target stage is "rejected", write rejection fields on application
+  → revalidate /pipeline, /applications/[id]
 ```
 
-**Component Changes:**
-- Pipeline move dialog: Add rejection capture section
-- Application workspace: Add rejection details section
-- Timeline display: Add category badge rendering
-- Existing timeline event components need minor updates
+### Workspace edit of rejection
+```
+User clicks "Edit" in RejectionDetails
+  → Inline form (category select + textarea)
+  → updateApplication(applicationId, { rejection_reason_category, rejection_reason })
+  → PATCH /applications/{id} { rejection_reason_category, rejection_reason }
+  → revalidate /applications/[id]
+```
+
+### Timeline display
+```
+buildTimeline(application, history, ...)
+  → for each history entry where to_stage.name === "Rejected":
+      attach application.rejection_reason_category as a badge
+      attach application.rejection_reason as body text
+```
+
+## Edge Cases
+
+- **Moving away from Rejected:** rejection fields persist. This is correct —
+  the application was rejected at some point; the user can clear them
+  explicitly via the workspace edit if desired.
+- **Multiple REJECTED timeline events:** the application's rejection fields
+  reflect the most recent write (last-write-wins). Acceptable for v1.
+- **Stage named differently (e.g. "Declined"):** the "is this a rejection?"
+  check matches `stage.name.lower().strip() == "rejected"`. Documented so
+  custom-named rejection stages won't trigger the dialog (acceptable trade-off
+  for v1; can be made configurable later).
+- **Empty rejection (no category, no text):** allowed — the move still
+  proceeds, rejection fields simply aren't written.
 
 ## Success Criteria
 
-- ✅ Users can capture rejection reasons when moving to Rejected stage (optional)
-- ✅ Users can edit rejection reasons in application workspace
-- ✅ Rejection reasons display in timeline with category badges
-- ✅ Dedicated rejection section in workspace for rejected applications
-- ✅ Backward compatible (no breaking changes to existing data)
-- ✅ Performance: No significant impact on pipeline moves or timeline loading
-- ✅ Accessibility: Rejection reason capture follows existing a11y patterns
-- ✅ Analytics ready: Rejection reasons queryable via timeline events
-
-## Edge Cases & Considerations
-
-**Optional Capture:**
-- Users can skip rejection reason entirely
-- Category can be selected without reason text
-- Reason text can be provided without category (fallback to "other")
-
-**Timeline Event Updates:**
-- REJECTED events should be editable (unlike most timeline events)
-- Need to handle multiple REJECTED events (use most recent)
-- Maintain event history for audit trail
-
-**Category Enum:**
-- Use existing enum from applications table
-- No user-defined categories in this scope
-- Future-proof for potential category expansion
-
-**Display Consistency:**
-- Category badges use consistent colors
-- Timeline and workspace show same information
-- Empty rejection state handled gracefully
+- ✅ Moving an application to "Rejected" via Kanban drag opens a rejection
+  dialog with optional category + reason capture
+- ✅ Moving via the workspace `<Select>` opens the same dialog
+- ✅ The rejection category and reason persist on the application and survive
+  reload
+- ✅ The workspace shows a RejectionDetails section for rejected applications
+- ✅ RejectionDetails is editable inline
+- ✅ Timeline shows the rejection category badge + reason on the Rejected
+  stage-transition entry
+- ✅ No new database columns or migrations required
+- ✅ No regression: existing timeline event rejection sync still works
+- ✅ All existing tests pass; new tests cover the move-with-rejection flow
 
 ## Testing Strategy
 
-**Backend Tests:**
-- Timeline event creation with rejection category
-- REJECTED event update functionality
-- Rejection reason sync to applications table
-- Timeline event queries with rejection filtering
+**Backend:**
+- `move_application` writes rejection fields when target is "Rejected"
+- `move_application` ignores rejection fields when target is not "Rejected"
+- `update_application` can set and clear rejection fields
+- Existing timeline event rejection sync still works (no regression)
 
-**Frontend Tests:**
-- Pipeline move dialog rejection capture
-- Workspace rejection details editing
-- Timeline category badge rendering
-- Optional capture scenarios
+**Frontend:**
+- Rejection dialog appears when moving to a "Rejected" stage
+- Dialog does NOT appear for non-rejected stages
+- `moveApplication` server action forwards rejection fields
+- RejectionDetails renders when category is set
+- RejectionDetails edit calls `updateApplication`
 
-**Integration Tests:**
-- End-to-end rejection flow (pipeline → timeline → workspace)
-- Multiple REJECTED events handling
-- Analytics queries on rejection reasons
+## Out of Scope (deferred)
 
-## Dependencies
-
-**Blocks:**
-- None (builds on completed F2 timeline events)
-
-**Unblocks:**
-- F4 New default pipeline (if needed)
-- Analytics enhancements (rejection reason breakdowns)
-- Potential future features (follow-up suggestions based on rejection patterns)
-
-## Migration & Rollout
-
-**Database Migration:**
-- Add `rejection_reason_category` column to timeline_events table
-- Update existing REJECTED events where possible
-- No data loss expected
-
-**Feature Rollout:**
-- Backend deployment first (API compatible)
-- Frontend deployment second (UI enhancements)
-- No user action required (feature is additive)
-
-## Performance Considerations
-
-**Query Impact:**
-- Timeline queries may include rejection category filtering
-- Minimal impact (additional nullable field)
-- Existing indexes support new queries
-
-**UI Performance:**
-- Category badges: CSS-based, minimal rendering cost
-- Rejection details section: Only loads for rejected applications
-- No N+1 queries expected
-
-## Future Enhancements (Out of Scope)
-
-- Analytics dashboard with rejection reason breakdowns
-- Follow-up suggestions based on rejection patterns
-- Custom rejection categories (beyond enum)
-- Rejection reason trends over time
-- Export rejection data for analysis
+- Analytics breakdown of rejection reasons (Phase A in roadmap)
+- Custom user-defined rejection categories
+- Configurable "rejection stage" detection (beyond name == "rejected")
+- Auto-clearing rejection fields when moving away from Rejected
 
 ---
 
-**Status:** Ready for implementation planning
-**Approve:** Get user approval before proceeding to implementation plan
-**Next Step:** Invoke writing-plans skill to create detailed implementation plan
+**Status:** Corrected and ready for implementation planning
