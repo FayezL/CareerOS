@@ -43,10 +43,17 @@ class ReorderStagesRequest(BaseModel):
 
 
 class MoveStageRequest(BaseModel):
-    """Move an application to a different stage, optionally annotating the move."""
+    """Move an application to a different stage, optionally annotating the move.
+
+    When the target stage is a rejection stage (name ``"Rejected"``), the
+    caller may supply a structured reason that the service writes onto the
+    application row for analytics and timeline display.
+    """
 
     to_stage_id: uuid.UUID
     note: str | None = None
+    rejection_reason_category: str | None = None
+    rejection_reason: str | None = Field(default=None, max_length=255)
 
 
 class StageHistoryRead(BaseModel):
