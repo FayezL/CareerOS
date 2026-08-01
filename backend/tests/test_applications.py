@@ -314,3 +314,42 @@ async def test_update_application_replaces_tags(
     assert patched.status_code == 200, patched.text
     tag_names = sorted(t["name"] for t in patched.json()["tags"])
     assert tag_names == ["B", "C"]
+
+
+async def test_update_rejection_fields(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    headers = auth()
+    company = await client.post(
+        "/api/v1/companies", headers=headers, json={"name": "Update Reject Co"}
+    )
+    assert company.status_code == 201, company.text
+    company_id = company.json()["id"]
+    app_resp = await client.post(
+        "/api/v1/applications",
+        headers=headers,
+        json={"company_id": company_id, "role_title": "Eng"},
+    )
+    assert app_resp.status_code == 201, app_resp.text
+    application_id = app_resp.json()["id"]
+
+    patch = await client.patch(
+        f"/api/v1/applications/{application_id}",
+        headers=headers,
+        json={
+            "rejection_reason_category": "culture_fit",
+            "rejection_reason": "Team didn't feel like a match",
+        },
+    )
+    assert patch.status_code == 200, patch.text
+    updated = patch.json()
+    assert updated["rejection_reason_category"] == "culture_fit"
+    assert updated["rejection_reason"] == "Team didn't feel like a match"
+
+    clear = await client.patch(
+        f"/api/v1/applications/{application_id}",
+        headers=headers,
+        json={"rejection_reason_category": None},
+    )
+    assert clear.status_code == 200, clear.text
+    assert clear.json()["rejection_reason_category"] is None
