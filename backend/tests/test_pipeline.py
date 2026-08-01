@@ -29,6 +29,14 @@ async def _create_application(client: AsyncClient, headers: dict[str, str], comp
     return response.json()["id"]
 
 
+def _stage_id(stages: list[dict[str, object]], name: str) -> str:
+    """Return the id of the stage whose name matches (case-insensitive)."""
+    for s in stages:
+        if str(s["name"]).lower() == name.lower():
+            return str(s["id"])
+    raise AssertionError(f"No stage named {name!r} in {[s['name'] for s in stages]}")
+
+
 async def test_default_stages_seeded(
     client: AsyncClient, auth: AuthHeaders, require_db: None
 ) -> None:
@@ -173,3 +181,71 @@ async def test_pipeline_isolation(client: AsyncClient, auth: AuthHeaders, requir
     assert (
         await client.delete(f"/api/v1/pipeline-stages/{a_stage}", headers=user_b)
     ).status_code == 404
+
+
+async def test_move_to_rejected_captures_reason(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    headers = auth()
+    company_id = await _create_company(client, headers, "Reject Co")
+    application_id = await _create_application(client, headers, company_id)
+    stages = await _stages(client, headers)
+    rejected_id = _stage_id(stages, "Rejected")
+
+    move = await client.post(
+        f"/api/v1/applications/{application_id}/move",
+        headers=headers,
+        json={
+            "to_stage_id": rejected_id,
+            "rejection_reason_category": "salary",
+            "rejection_reason": "Offer was 30% below market",
+        },
+    )
+    assert move.status_code == 200, move.text
+    moved = move.json()
+    assert moved["rejection_reason_category"] == "salary"
+    assert moved["rejection_reason"] == "Offer was 30% below market"
+
+
+async def test_move_to_non_rejected_ignores_rejection_fields(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    headers = auth()
+    company_id = await _create_company(client, headers, "Ignore Co")
+    application_id = await _create_application(client, headers, company_id)
+    stages = await _stages(client, headers)
+    interview_id = _stage_id(stages, "Interview")
+
+    move = await client.post(
+        f"/api/v1/applications/{application_id}/move",
+        headers=headers,
+        json={
+            "to_stage_id": interview_id,
+            "rejection_reason_category": "salary",
+            "rejection_reason": "should be ignored",
+        },
+    )
+    assert move.status_code == 200, move.text
+    moved = move.json()
+    assert moved["rejection_reason_category"] is None
+    assert moved["rejection_reason"] is None
+
+
+async def test_move_to_rejected_without_reason_succeeds(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    headers = auth()
+    company_id = await _create_company(client, headers, "Silent Co")
+    application_id = await _create_application(client, headers, company_id)
+    stages = await _stages(client, headers)
+    rejected_id = _stage_id(stages, "Rejected")
+
+    move = await client.post(
+        f"/api/v1/applications/{application_id}/move",
+        headers=headers,
+        json={"to_stage_id": rejected_id},
+    )
+    assert move.status_code == 200, move.text
+    moved = move.json()
+    assert moved["rejection_reason_category"] is None
+    assert moved["rejection_reason"] is None
