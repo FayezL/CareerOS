@@ -4,7 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import type { RejectionReasonCategory } from "@/types"
-import { apiFetch } from "@/services/api-client"
+import { moveApplication } from "./actions"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,24 +56,18 @@ export function RejectionDialog({
 
   async function handleConfirm() {
     setIsPending(true)
-    try {
-      const body: Record<string, unknown> = { to_stage_id: toStageId }
-      if (category) body.rejection_reason_category = category
-      if (reason.trim()) body.rejection_reason = reason.trim()
+    const result = await moveApplication(applicationId, toStageId, {
+      rejection_reason_category: category || undefined,
+      rejection_reason: reason.trim() || undefined,
+    })
+    setIsPending(false)
 
-      await apiFetch(`/applications/${applicationId}/move`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
-
+    if (result.ok) {
       toast.success("Moved to Rejected")
       onOpenChange(false)
       onSuccess?.()
-    } catch {
-      toast.error("Failed to move application")
-    } finally {
-      setIsPending(false)
+    } else {
+      toast.error(result.error ?? "Failed to move application")
     }
   }
 

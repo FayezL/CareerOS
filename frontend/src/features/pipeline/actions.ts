@@ -92,12 +92,23 @@ export async function reorderStages(stageIds: string[]): Promise<ActionResult> {
 export async function moveApplication(
   applicationId: string,
   toStageId: string,
+  options?: {
+    rejection_reason_category?: string
+    rejection_reason?: string
+  },
 ): Promise<ActionResult> {
   try {
+    const body: Record<string, unknown> = { to_stage_id: toStageId }
+    if (options?.rejection_reason_category) {
+      body.rejection_reason_category = options.rejection_reason_category
+    }
+    if (options?.rejection_reason) {
+      body.rejection_reason = options.rejection_reason
+    }
     await apiFetch(`/applications/${applicationId}/move`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to_stage_id: toStageId }),
+      body: JSON.stringify(body),
     })
     revalidatePath("/pipeline")
     revalidatePath(`/applications/${applicationId}`)
