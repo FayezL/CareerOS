@@ -103,13 +103,35 @@ export async function listTags(): Promise<Tag[]> {
 /** Fetch the authenticated user's applications, optionally scoped to a company. */
 export async function listApplications(params?: { companyId?: string }): Promise<Application[]> {
   const qs = params?.companyId ? `?company_id=${encodeURIComponent(params.companyId)}` : ""
-  const data = await apiFetch<PageOut<Application> | Application[]>(`/applications${qs}`)
-  return unwrapList(data)
+  const data = await apiFetch<PageOut<RawApplication> | RawApplication[]>(`/applications${qs}`)
+  return unwrapList(data).map(normalizeApplication)
 }
 
 /** Fetch a single application by id (embeds company and current stage). */
 export async function getApplication(id: string): Promise<Application> {
-  return apiFetch<Application>(`/applications/${id}`)
+  const raw = await apiFetch<RawApplication>(`/applications/${id}`)
+  return normalizeApplication(raw)
+}
+
+/**
+ * The raw shape the backend actually emits for an application. The
+ * `ApplicationRead` Pydantic schema uses `current_stage` / `current_stage_id`,
+ * while the frontend `Application` type uses `stage` / `stage_id`. We normalize
+ * at this boundary so every consumer (Kanban grouping, workspace, dashboard,
+ * company detail) sees the documented frontend shape.
+ */
+type RawApplication = Omit<Application, "stage_id" | "stage"> & {
+  current_stage_id?: string | null
+  current_stage?: Application["stage"]
+}
+
+function normalizeApplication(raw: RawApplication): Application {
+  const { current_stage_id, current_stage, ...rest } = raw
+  return {
+    ...rest,
+    stage_id: current_stage_id ?? null,
+    stage: current_stage ?? null,
+  }
 }
 
 /** Fetch the stage-change timeline for an application, oldest first. */
