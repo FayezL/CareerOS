@@ -59,6 +59,7 @@ function buildApplicationPayload(formData: FormData): Record<string, unknown> {
     salary_currency: textValue(formData, "salary_currency"),
     applied_at: textValue(formData, "applied_at"),
     job_description: textValue(formData, "job_description"),
+    rejection_reason: textValue(formData, "rejection_reason"),
     tags: tagValues(formData),
   })
 }
@@ -119,6 +120,48 @@ export async function deleteApplication(id: string): Promise<ActionResult> {
   try {
     await apiFetch(`/applications/${id}`, { method: "DELETE" })
     revalidatePath("/applications")
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) }
+  }
+}
+
+/**
+ * Patch ONLY the rejection fields on an application. The backend uses
+ * `exclude_unset=True`, so omitting other fields leaves them untouched.
+ *
+ * Pass `null` (explicit) for either field to clear it; pass `undefined` to
+ * leave the field at its current value.
+ */
+export async function updateRejectionDetails(
+  id: string,
+  fields: {
+    rejection_reason_category?: string | null
+    rejection_reason?: string | null
+  },
+): Promise<ActionResult> {
+  // Build a payload that only carries keys the caller touched. We send the
+  // keys explicitly so the backend clears a field when the value is null.
+  const payload: Record<string, unknown> = {}
+  if ("rejection_reason_category" in fields) {
+    payload.rejection_reason_category = fields.rejection_reason_category || null
+  }
+  if ("rejection_reason" in fields) {
+    const reason = fields.rejection_reason?.trim() || null
+    if (reason && reason.length > 255) {
+      return { ok: false, error: "Rejection reason must be 255 characters or fewer." }
+    }
+    payload.rejection_reason = reason
+  }
+  try {
+    await apiFetch(`/applications/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+    revalidatePath("/applications")
+    revalidatePath(`/applications/${id}`)
+    revalidatePath("/pipeline")
     return { ok: true }
   } catch (error) {
     return { ok: false, error: errorMessage(error) }

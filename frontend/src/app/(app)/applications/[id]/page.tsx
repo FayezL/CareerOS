@@ -16,6 +16,7 @@ import { ErrorState } from "@/components/error-state"
 import { ApplicationForm } from "@/features/applications/application-form"
 import { ApplicationTimeline } from "@/features/applications/application-timeline"
 import { ApplicationDetails } from "@/features/applications/application-details"
+import { RejectionDetails } from "@/features/applications/rejection-details"
 import { ApplicationStatusBadge } from "@/features/applications/status-badge"
 import { TagBadges } from "@/features/applications/tag-badges"
 import { DocumentsPanel } from "@/features/documents/documents-panel"
@@ -170,6 +171,7 @@ export default async function ApplicationDetailPage({ params }: PageProps) {
 
         <div className="space-y-8">
           <ApplicationDetails application={application} />
+          <RejectionDetails application={application} />
           <div className="border-t border-border pt-6">
             <DocumentsPanel applicationId={application.id} initial={documents} />
           </div>

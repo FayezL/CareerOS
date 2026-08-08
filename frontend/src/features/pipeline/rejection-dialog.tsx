@@ -4,6 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import type { RejectionReasonCategory } from "@/types"
+import { REJECTION_CATEGORY_OPTIONS } from "@/features/applications/rejection-categories"
 import { moveApplication } from "./actions"
 import {
   AlertDialog,
@@ -24,16 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-
-const REJECTION_CATEGORIES: { value: RejectionReasonCategory; label: string }[] = [
-  { value: "visa_sponsorship", label: "Visa sponsorship" },
-  { value: "lack_of_experience", label: "Lack of experience" },
-  { value: "salary", label: "Salary" },
-  { value: "culture_fit", label: "Culture fit" },
-  { value: "position_filled", label: "Position filled" },
-  { value: "no_feedback", label: "No feedback" },
-  { value: "other", label: "Other" },
-]
 
 type RejectionDialogProps = {
   open: boolean
@@ -92,7 +83,7 @@ export function RejectionDialog({
                 <SelectValue placeholder="Select a reason (optional)" />
               </SelectTrigger>
               <SelectContent>
-                {REJECTION_CATEGORIES.map((c) => (
+                {REJECTION_CATEGORY_OPTIONS.map((c) => (
                   <SelectItem key={c.value} value={c.value}>
                     {c.label}
                   </SelectItem>
@@ -130,5 +121,3 @@ export function RejectionDialog({
     </AlertDialog>
   )
 }
-
-export { REJECTION_CATEGORIES }

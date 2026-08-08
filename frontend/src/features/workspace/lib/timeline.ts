@@ -1,4 +1,12 @@
-import type { Application, Interview, Note, StageHistory, TimelineEvent } from "@/types"
+import type {
+  Application,
+  Interview,
+  Note,
+  RejectionReasonCategory,
+  StageHistory,
+  TimelineEvent,
+} from "@/types"
+import { REJECTION_CATEGORY_LABELS } from "@/features/applications/rejection-categories"
 import {
   Calendar,
   CheckCircle2,
@@ -28,6 +36,9 @@ export interface TimelineItem {
   source?: string
   isReview: boolean
   borderColor: string
+  /** Present when this stage entry carries the application's rejection reason. */
+  rejectionCategory?: RejectionReasonCategory
+  rejectionReason?: string | null
 }
 
 const EVENT_METADATA: Record<string, EventMetadata> = {
@@ -136,7 +147,42 @@ export function buildTimeline(
 ): TimelineItem[] {
   const items: TimelineItem[] = []
 
+  // The rejection fields on `application` describe its CURRENT rejection state.
+  // They are only meaningful on the chronologically-latest stage entry, and only
+  // when that entry moved the application into a "Rejected" stage. We compute
+  // the latest stage id from the history (rather than reading `application.stage`)
+  // so the timeline stays correct even if the stage relation is not embedded.
+  const latestStageId = stageHistory
+    .slice()
+    .sort((a, b) => new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime())
+    .at(-1)?.id
+  const activeRejectionCategory = application.rejection_reason_category ?? null
+
   for (const stage of stageHistory) {
+    const isRejectedStage = stage.to_stage.name.trim().toLowerCase() === "rejected"
+    const isActiveRejection =
+      isRejectedStage && stage.id === latestStageId && activeRejectionCategory !== null
+
+    let title = `Moved to ${stage.to_stage.name}`
+    let body = stage.note
+    let borderColor = "border-l-blue-500"
+
+    if (isRejectedStage) {
+      borderColor = "border-l-red-500"
+    }
+
+    if (isActiveRejection && activeRejectionCategory) {
+      const categoryLabel = REJECTION_CATEGORY_LABELS[activeRejectionCategory]
+      title = `Moved to Rejected — ${categoryLabel}`
+
+      // Combine stage note with rejection reason if both exist.
+      if (application.rejection_reason && stage.note) {
+        body = `${stage.note} — ${application.rejection_reason}`
+      } else if (application.rejection_reason) {
+        body = application.rejection_reason
+      }
+    }
+
     items.push({
       id: `stage-${stage.id}`,
       type: "stage",
@@ -147,10 +193,12 @@ export function buildTimeline(
         color: "text-blue-600",
         description: `Moved to ${stage.to_stage.name}`,
       },
-      title: `Moved to ${stage.to_stage.name}`,
-      body: stage.note,
+      title,
+      body,
       isReview: false,
-      borderColor: "border-l-blue-500",
+      borderColor,
+      rejectionCategory: isActiveRejection ? (activeRejectionCategory ?? undefined) : undefined,
+      rejectionReason: isActiveRejection ? application.rejection_reason : undefined,
     })
   }
 

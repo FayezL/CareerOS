@@ -5,6 +5,7 @@ import { cn } from "@/utils/cn"
 import { buildTimeline } from "@/features/workspace/lib/timeline"
 import { DeleteEventDialog } from "@/features/workspace/components/delete-event-dialog"
 import { AddEventForm } from "@/features/workspace/components/add-event-form"
+import { REJECTION_CATEGORY_LABELS } from "@/features/applications/rejection-categories"
 
 type ApplicationTimelineProps = {
   application: Application
@@ -89,6 +90,14 @@ export function ApplicationTimeline({
                   <p className="mt-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
                     {item.body}
                   </p>
+                )}
+                {item.rejectionCategory && (
+                  <span
+                    title={item.rejectionReason ?? undefined}
+                    className="mt-1 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                  >
+                    {REJECTION_CATEGORY_LABELS[item.rejectionCategory]}
+                  </span>
                 )}
                 {item.importance && item.importance !== "NORMAL" && (
                   <span

@@ -30,8 +30,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/utils/cn"
 
+import { REJECTION_CATEGORY_LABELS } from "@/features/applications/rejection-categories"
 import { StageForm } from "./stage-form"
 import { deleteStage, moveApplication } from "./actions"
+import { RejectionDialog } from "./rejection-dialog"
 
 type KanbanBoardProps = {
   stages: PipelineStage[]
@@ -65,6 +67,11 @@ function Board({
   const [apps, setApps] = useState<Application[]>(applications)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [, startTransition] = useTransition()
+  const [pendingRejection, setPendingRejection] = useState<{
+    applicationId: string
+    stage: PipelineStage
+    fromStageId: string | null
+  } | null>(null)
 
   // Re-sync from server data whenever the parent re-renders with fresh props
   // (e.g. after a server action revalidates the route).
@@ -93,6 +100,16 @@ function Board({
 
     const fromStageId = app.stage_id ?? null
     if (toStageId === fromStageId) return
+
+    const targetStage = stages.find((s) => s.id === toStageId)
+    if (targetStage && targetStage.name.trim().toLowerCase() === "rejected") {
+      setPendingRejection({
+        applicationId,
+        stage: targetStage,
+        fromStageId,
+      })
+      return
+    }
 
     // Optimistic: move the card immediately, revert on failure.
     setApps((prev) => prev.map((a) => (a.id === applicationId ? { ...a, stage_id: toStageId } : a)))
@@ -153,6 +170,23 @@ function Board({
           ) : null}
         </DragOverlay>
       </DndContext>
+      {pendingRejection && (
+        <RejectionDialog
+          open={!!pendingRejection}
+          onOpenChange={(open) => !open && setPendingRejection(null)}
+          applicationId={pendingRejection.applicationId}
+          toStageId={pendingRejection.stage.id}
+          onSuccess={() => {
+            setApps((prev) =>
+              prev.map((a) =>
+                a.id === pendingRejection.applicationId
+                  ? { ...a, stage_id: pendingRejection.stage.id }
+                  : a,
+              ),
+            )
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -232,8 +266,19 @@ function KanbanCard({
     >
       <p className="text-sm font-medium leading-tight">{application.role_title}</p>
       <p className="mt-1 text-xs text-muted-foreground">{companyName}</p>
-      <div className="mt-2">
+      <div className="mt-2 flex items-center gap-2">
         <StatusBadge status={application.status} />
+        {application.rejection_reason_category && (
+          <span
+            className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400"
+            title={
+              application.rejection_reason ||
+              REJECTION_CATEGORY_LABELS[application.rejection_reason_category]
+            }
+          >
+            {REJECTION_CATEGORY_LABELS[application.rejection_reason_category]}
+          </span>
+        )}
       </div>
     </Link>
   )
@@ -250,8 +295,19 @@ function CardPreview({
     <div className="w-64 cursor-grabbing rounded-md border bg-card p-3 text-card-foreground shadow-lg">
       <p className="text-sm font-medium leading-tight">{application.role_title}</p>
       <p className="mt-1 text-xs text-muted-foreground">{companyName}</p>
-      <div className="mt-2">
+      <div className="mt-2 flex items-center gap-2">
         <StatusBadge status={application.status} />
+        {application.rejection_reason_category && (
+          <span
+            className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400"
+            title={
+              application.rejection_reason ||
+              REJECTION_CATEGORY_LABELS[application.rejection_reason_category]
+            }
+          >
+            {REJECTION_CATEGORY_LABELS[application.rejection_reason_category]}
+          </span>
+        )}
       </div>
     </div>
   )
