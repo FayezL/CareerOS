@@ -154,9 +154,11 @@ async def move_application(
     moved = await app_repo.move(application, data.to_stage_id, data.note)
 
     if target_stage.name.strip().lower() == "rejected":
-        if data.rejection_reason_category is not None:
+        # Treat empty strings as absent so a client sending "" can't push an
+        # invalid value past the enum constraint. ``None`` means "leave untouched".
+        if data.rejection_reason_category:
             moved.rejection_reason_category = data.rejection_reason_category
-        if data.rejection_reason is not None:
+        if data.rejection_reason is not None and data.rejection_reason.strip():
             moved.rejection_reason = data.rejection_reason
         await session.flush()
 

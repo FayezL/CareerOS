@@ -206,6 +206,36 @@ async def test_move_to_rejected_captures_reason(
     assert moved["rejection_reason_category"] == "salary"
     assert moved["rejection_reason"] == "Offer was 30% below market"
 
+    # Persistence: re-fetch and confirm the row actually holds the values.
+    fetched = await client.get(f"/api/v1/applications/{application_id}", headers=headers)
+    assert fetched.status_code == 200, fetched.text
+    body = fetched.json()
+    assert body["rejection_reason_category"] == "salary"
+    assert body["rejection_reason"] == "Offer was 30% below market"
+
+
+async def test_move_to_rejected_rejects_invalid_category(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    """Invalid category values must be rejected at the schema layer (422),
+    not allowed to reach the DB enum constraint and surface as a 500."""
+    headers = auth()
+    company_id = await _create_company(client, headers, "Enum Co")
+    application_id = await _create_application(client, headers, company_id)
+    stages = await _stages(client, headers)
+    rejected_id = _stage_id(stages, "Rejected")
+
+    move = await client.post(
+        f"/api/v1/applications/{application_id}/move",
+        headers=headers,
+        json={
+            "to_stage_id": rejected_id,
+            "rejection_reason_category": "not_a_real_enum_value",
+            "rejection_reason": "should never be written",
+        },
+    )
+    assert move.status_code == 422, move.text
+
 
 async def test_move_to_non_rejected_ignores_rejection_fields(
     client: AsyncClient, auth: AuthHeaders, require_db: None

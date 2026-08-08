@@ -9,7 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from careeros_api.schemas.company import CompanyRead
-from careeros_api.schemas.pipeline import PipelineStageRead
+from careeros_api.schemas.pipeline import PipelineStageRead, RejectionReasonCategory
 from careeros_api.schemas.tag import TagRef
 
 ApplicationStatus = Literal["active", "archived", "rejected", "accepted"]
@@ -71,7 +71,7 @@ class ApplicationUpdate(BaseModel):
     # Rejection capture — editable from the workspace after a move. Setting
     # either to ``None`` clears it (use ``exclude_unset=True`` semantics).
     rejection_reason: str | None = Field(default=None, max_length=255)
-    rejection_reason_category: str | None = None
+    rejection_reason_category: RejectionReasonCategory | None = None
     # When present (even if empty), the application's tags are replaced with the
     # resolved set. Omit the field to leave tags untouched.
     tags: list[str] | None = None

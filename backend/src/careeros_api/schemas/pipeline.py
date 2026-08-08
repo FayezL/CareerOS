@@ -4,8 +4,22 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# Rejection categories. Must match the native PG enum `rejection_reason_category`
+# (see models/application.py). Validated here so invalid client input returns 422
+# instead of leaking to the DB.
+RejectionReasonCategory = Literal[
+    "visa_sponsorship",
+    "lack_of_experience",
+    "salary",
+    "culture_fit",
+    "position_filled",
+    "no_feedback",
+    "other",
+]
 
 
 class PipelineStageCreate(BaseModel):
@@ -52,7 +66,7 @@ class MoveStageRequest(BaseModel):
 
     to_stage_id: uuid.UUID
     note: str | None = None
-    rejection_reason_category: str | None = None
+    rejection_reason_category: RejectionReasonCategory | None = None
     rejection_reason: str | None = Field(default=None, max_length=255)
 
 
