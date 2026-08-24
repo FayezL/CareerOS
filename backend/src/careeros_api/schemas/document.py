@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from careeros_api.core.storage import UploadTarget
 
-DocumentType = Literal["resume", "cover_letter", "other"]
+DocumentType = Literal["resume", "cover_letter", "certificate", "reference", "visa", "other"]
 
 
 class DocumentCreate(BaseModel):
@@ -21,6 +21,16 @@ class DocumentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     mime_type: str | None = Field(default=None, max_length=255)
     size_bytes: int | None = Field(default=None, ge=0)
+    version_label: str | None = Field(default=None, max_length=255)
+
+
+class DocumentRevisionCreate(BaseModel):
+    """Payload to create a new revision of an existing root document."""
+
+    name: str = Field(..., min_length=1, max_length=255)
+    mime_type: str | None = Field(default=None, max_length=255)
+    size_bytes: int | None = Field(default=None, ge=0)
+    version_label: str | None = Field(default=None, max_length=255)
 
 
 class DocumentRead(BaseModel):
@@ -36,6 +46,11 @@ class DocumentRead(BaseModel):
     mime_type: str | None
     size_bytes: int | None
     version: int
+    parent_document_id: uuid.UUID | None = None
+    version_label: str | None = None
+    is_latest_version: bool = True
+    # Populated only on grouped list reads; None on flat/single reads.
+    revisions_count: int | None = None
     created_at: datetime
     updated_at: datetime
 
