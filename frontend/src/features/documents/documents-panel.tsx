@@ -35,7 +35,9 @@ type DocumentsPanelProps = {
 const DOCUMENT_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
   { value: "resume", label: "Resume" },
   { value: "cover_letter", label: "Cover letter" },
-  { value: "offer_letter", label: "Offer letter" },
+  { value: "certificate", label: "Certificate" },
+  { value: "reference", label: "Reference" },
+  { value: "visa", label: "Visa" },
   { value: "other", label: "Other" },
 ]
 
@@ -237,10 +239,22 @@ function DocumentTypeBadge({ type }: { type: DocumentType }) {
           Cover letter
         </Badge>
       )
-    case "offer_letter":
+    case "certificate":
       return (
-        <Badge className="border-green-500/30 bg-green-500/10 text-green-700 dark:border-green-400/30 dark:text-green-400">
-          Offer letter
+        <Badge className="border-purple-500/30 bg-purple-500/10 text-purple-700 dark:border-purple-400/30 dark:text-purple-300">
+          Certificate
+        </Badge>
+      )
+    case "reference":
+      return (
+        <Badge className="border-orange-500/30 bg-orange-500/10 text-orange-700 dark:border-orange-400/30 dark:text-orange-300">
+          Reference
+        </Badge>
+      )
+    case "visa":
+      return (
+        <Badge className="border-pink-500/30 bg-pink-500/10 text-pink-700 dark:border-pink-400/30 dark:text-pink-300">
+          Visa
         </Badge>
       )
     case "other":

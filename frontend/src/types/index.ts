@@ -176,7 +176,8 @@ export type InterviewType =
 export type ContactRole = "recruiter" | "hiring_manager" | "interviewer" | "referral" | "other"
 
 /** The category of a stored document. */
-export type DocumentType = "resume" | "cover_letter" | "offer_letter" | "other"
+export type DocumentType =
+  "resume" | "cover_letter" | "certificate" | "reference" | "visa" | "other"
 
 /** A person (recruiter, hiring manager, interviewer, referral). */
 export interface Contact {
@@ -225,17 +226,22 @@ export interface Document {
   name: string
   mime_type: string | null
   size_bytes: number | null
-  storage_uri: string | null
-  /** Signed upload URL — present only on the create response. */
-  upload_url?: string | null
-  /** HTTP method to use when uploading bytes (`PUT`/`POST`). */
-  upload_method?: string | null
-  /** Headers the client must send with the upload request. */
-  upload_headers?: Record<string, string> | null
-  /** When the signed upload URL expires. */
-  expires_at?: string | null
+  firebase_path: string
+  version: number
+  parent_document_id: string | null
+  version_label: string | null
+  is_latest_version: boolean
+  revisions_count: number | null
   created_at: string
   updated_at: string
+  /** Signed upload URL — present only on the create response. */
+  upload_url?: string
+  /** HTTP method to use when uploading bytes (`PUT`/`POST`). */
+  upload_method?: string
+  /** Headers the client must send with the upload request. */
+  upload_headers?: Record<string, string>
+  /** When the signed upload URL expires. */
+  expires_at?: string | null
 }
 
 /** A follow-up reminder tied to an application, contact, or interview. */

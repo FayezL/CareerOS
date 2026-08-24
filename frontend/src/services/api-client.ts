@@ -9,6 +9,7 @@ import type {
   CompanyOption,
   Contact,
   Document,
+  DocumentType,
   Interview,
   Note,
   PageOut,
@@ -191,12 +192,25 @@ export async function deleteTimelineEvent(id: string): Promise<void> {
   return apiFetch<void>(`/timeline-events/${id}`, { method: "DELETE" })
 }
 
-/** Fetch documents attached to a given application. */
-export async function listDocuments(applicationId: string): Promise<Document[]> {
-  const data = await apiFetch<PageOut<Document> | Document[]>(
-    `/documents?application_id=${encodeURIComponent(applicationId)}`,
-  )
-  return unwrapList(data)
+/** Fetch the caller's documents (grouped: one row per logical document). */
+export async function listDocuments(params?: {
+  applicationId?: string
+  type?: DocumentType
+  cursor?: string
+  includeRevisions?: boolean
+}): Promise<PageOut<Document>> {
+  const qs = new URLSearchParams()
+  if (params?.applicationId) qs.set("application_id", params.applicationId)
+  if (params?.type) qs.set("type", params.type)
+  if (params?.cursor) qs.set("cursor", params.cursor)
+  if (params?.includeRevisions) qs.set("include_revisions", "true")
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : ""
+  return apiFetch<PageOut<Document>>(`/documents${suffix}`)
+}
+
+/** Fetch a document group's revision history (oldest first). */
+export async function listDocumentRevisions(rootId: string): Promise<Document[]> {
+  return apiFetch<Document[]>(`/documents/${rootId}/revisions`)
 }
 
 /**
