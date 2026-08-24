@@ -12,6 +12,7 @@ from careeros_api.schemas.common import PageOut
 from careeros_api.schemas.document import (
     DocumentCreate,
     DocumentRead,
+    DocumentRevisionCreate,
     DocumentType,
     DocumentUploadTarget,
 )
@@ -28,6 +29,7 @@ async def list_documents(
     cursor: str | None = Query(None),
     application_id: uuid.UUID | None = Query(None),
     type_filter: DocumentType | None = Query(None, alias="type"),
+    include_revisions: bool = Query(False),
 ) -> PageOut[DocumentRead]:
     """Page through the caller's documents with optional filters."""
     return await document_service.list_documents(
@@ -37,6 +39,7 @@ async def list_documents(
         cursor=cursor,
         application_id=application_id,
         type_filter=type_filter,
+        include_revisions=include_revisions,
     )
 
 
@@ -52,6 +55,33 @@ async def create_document(
 ) -> DocumentUploadTarget:
     """Create document metadata and return an upload target."""
     return await document_service.create_document(session, current_user, data, get_storage_client())
+
+
+@router.post(
+    "/{document_id}/revisions",
+    response_model=DocumentUploadTarget,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_document_revision(
+    session: SessionDep,
+    current_user: CurrentUserDep,
+    document_id: uuid.UUID,
+    data: DocumentRevisionCreate,
+) -> DocumentUploadTarget:
+    """Create a revision of a root document and return an upload target."""
+    return await document_service.create_document_revision(
+        session, current_user, document_id, data, get_storage_client()
+    )
+
+
+@router.get("/{document_id}/revisions", response_model=list[DocumentRead])
+async def list_document_revisions(
+    session: SessionDep,
+    current_user: CurrentUserDep,
+    document_id: uuid.UUID,
+) -> list[DocumentRead]:
+    """List a document group's revision history (oldest first)."""
+    return await document_service.list_document_revisions(session, current_user, document_id)
 
 
 @router.get("/{document_id}", response_model=DocumentRead)
