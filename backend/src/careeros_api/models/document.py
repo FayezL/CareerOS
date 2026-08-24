@@ -15,6 +15,9 @@ from careeros_api.db.mixins import TimestampMixin, UUIDPrimaryKey
 document_type = sa.Enum(
     "resume",
     "cover_letter",
+    "certificate",
+    "reference",
+    "visa",
     "other",
     name="document_type",
     native_enum=True,
@@ -30,12 +33,25 @@ class Document(UUIDPrimaryKey, TimestampMixin, Base):
 
     __tablename__ = "documents"
     __table_args__ = (
-        Index("ix_documents_user_id_type", "user_id", "type"),
         Index(
-            "ix_documents_user_id_created_at_id",
+            "ix_documents_user_type_created_at",
             "user_id",
+            "type",
             text("created_at DESC"),
             text("id DESC"),
+        ),
+        Index("ix_documents_parent_document_id", "parent_document_id"),
+        Index(
+            "ix_documents_one_latest_per_group",
+            text("COALESCE(parent_document_id, id)"),
+            unique=True,
+            postgresql_where=text("is_latest_version = true"),
+        ),
+        Index(
+            "ix_documents_group_version",
+            text("COALESCE(parent_document_id, id)"),
+            text("version"),
+            unique=True,
         ),
     )
 
@@ -50,11 +66,23 @@ class Document(UUIDPrimaryKey, TimestampMixin, Base):
         index=True,
         nullable=True,
     )
+    parent_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=True,
+    )
     type: Mapped[str] = mapped_column(document_type, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     firebase_path: Mapped[str] = mapped_column(Text, nullable=False)
     mime_type: Mapped[str | None] = mapped_column(String, nullable=True)
     size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    version_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_latest_version: Mapped[bool] = mapped_column(
+        sa.Boolean,
+        nullable=False,
+        default=True,
+        server_default=sa.text("true"),
+    )
     version: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
