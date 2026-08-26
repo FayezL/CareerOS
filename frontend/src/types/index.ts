@@ -397,13 +397,14 @@ export interface GenerationResponse {
 /**
  * Generic paginated envelope.
  *
- * The backend may return either this shape or a bare array for list endpoints;
- * `unwrapList` in `services/api-client.ts` normalizes both to an array.
+ * The backend uses cursor-based pagination with `items` and `next_cursor`.
+ * For older endpoints that still use offset pagination, the fields may differ.
  */
 export interface PageOut<T> {
   items: T[]
-  total: number
-  page: number
-  size: number
-  pages: number
+  next_cursor?: string | null
+  total?: number
+  page?: number
+  size?: number
+  pages?: number
 }
