@@ -161,8 +161,11 @@ async def move_application(
         if data.rejection_reason is not None and data.rejection_reason.strip():
             moved.rejection_reason = data.rejection_reason
         await session.flush()
+        # The flush expires server-generated columns (e.g. ``updated_at``);
+        # re-fetch through the repo so nothing lazy-loads outside the async
+        # context during serialization.
+        moved = await app_repo.reload(moved.id)
 
-    await session.refresh(moved, attribute_names=["company", "current_stage"])
     return ApplicationRead.model_validate(moved)
 
 

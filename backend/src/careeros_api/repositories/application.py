@@ -99,7 +99,7 @@ class ApplicationRepository(BaseRepository[Application]):
         application = Application(user_id=user_id, company_id=company_id, **payload)
         self.session.add(application)
         await self.session.flush()
-        return await self._reload(application.id)
+        return await self.reload(application.id)
 
     async def update(self, application: Application, data: ApplicationUpdate) -> Application:
         """Apply a partial update to ``application`` using only provided fields."""
@@ -113,7 +113,7 @@ class ApplicationRepository(BaseRepository[Application]):
         for field, value in payload.items():
             setattr(application, field, value)
         await self.session.flush()
-        return await self._reload(application.id)
+        return await self.reload(application.id)
 
     async def soft_delete(self, application: Application) -> None:
         """Mark ``application`` as deleted without removing the row."""
@@ -138,7 +138,7 @@ class ApplicationRepository(BaseRepository[Application]):
             )
         )
         await self.session.flush()
-        return await self._reload(application.id)
+        return await self.reload(application.id)
 
     async def history(self, application: Application) -> Sequence[ApplicationStageHistory]:
         """Return the stage-transition timeline for ``application`` (oldest first)."""
@@ -157,8 +157,12 @@ class ApplicationRepository(BaseRepository[Application]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def _reload(self, application_id: uuid.UUID) -> Application:
-        """Re-fetch an application with its relations eager-loaded."""
+    async def reload(self, application_id: uuid.UUID) -> Application:
+        """Re-fetch an application with its relations eager-loaded.
+
+        ``populate_existing`` overwrites any already-loaded state on the
+        identity-mapped instance, so relations reflect the latest FKs.
+        """
         stmt = (
             select(Application)
             .options(
@@ -166,6 +170,7 @@ class ApplicationRepository(BaseRepository[Application]):
                 selectinload(Application.current_stage),
                 selectinload(Application.tags),
             )
+            .execution_options(populate_existing=True)
             .where(Application.id == application_id)
         )
         result = await self.session.execute(stmt)
