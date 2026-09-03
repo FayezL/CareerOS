@@ -16,8 +16,23 @@ export type CreateDocumentInput = {
   size_bytes: number
 }
 
+/** Input for creating a revision (matches POST /documents/{id}/revisions). */
+export type CreateRevisionInput = {
+  rootId: string
+  name: string
+  mime_type: string
+  size_bytes: number
+  version_label?: string
+}
+
 /** Result of a create; carries the created document (incl. its upload URL). */
 export type CreateDocumentResult = {
+  ok: boolean
+  document?: Document
+  error?: string
+}
+
+export type CreateRevisionResult = {
   ok: boolean
   document?: Document
   error?: string
@@ -55,6 +70,32 @@ export async function createDocumentMetadata(
 }
 
 /**
+ * Create a document revision and request a signed upload URL. The returned
+ * document carries `upload_url` (and friends); the client uploads the bytes
+ * directly to it. Revalidates the documents route.
+ */
+export async function createDocumentRevision(
+  input: CreateRevisionInput,
+): Promise<CreateRevisionResult> {
+  try {
+    const document = await apiFetch<Document>(`/documents/${input.rootId}/revisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: input.name,
+        mime_type: input.mime_type,
+        size_bytes: input.size_bytes,
+        version_label: input.version_label || undefined,
+      }),
+    })
+    revalidatePath("/documents")
+    return { ok: true, document }
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) }
+  }
+}
+
+/**
  * Delete a document (metadata + underlying object) and revalidate the owning
  * application detail route.
  */
@@ -62,6 +103,7 @@ export async function deleteDocument(id: string, applicationId: string): Promise
   try {
     await apiFetch(`/documents/${id}`, { method: "DELETE" })
     revalidatePath(applicationDetailPath(applicationId))
+    revalidatePath("/documents")
     return { ok: true }
   } catch (error) {
     return { ok: false, error: errorMessage(error) }

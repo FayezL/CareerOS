@@ -16,30 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
-import { createDocumentMetadata, deleteDocument } from "./actions"
+import { createDocumentMetadata, createDocumentRevision, deleteDocument } from "./actions"
+import { DOCUMENT_TYPE_OPTIONS, groupDocuments, type DocumentGroup } from "./document-groups"
 
 type DocumentsPanelProps = {
   applicationId: string
   initial: Document[]
 }
-
-const DOCUMENT_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
-  { value: "resume", label: "Resume" },
-  { value: "cover_letter", label: "Cover letter" },
-  { value: "certificate", label: "Certificate" },
-  { value: "reference", label: "Reference" },
-  { value: "visa", label: "Visa" },
-  { value: "other", label: "Other" },
-]
 
 /**
  * Lists an application's documents and uploads new ones. Creating the metadata
@@ -52,7 +36,12 @@ export function DocumentsPanel({ applicationId, initial }: DocumentsPanelProps) 
   const [selectedType, setSelectedType] = useState<DocumentType>("resume")
   const [uploading, setUploading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [addingVersionTo, setAddingVersionTo] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const versionInputRef = useRef<HTMLInputElement>(null)
+
+  const groups = groupDocuments(documents)
 
   async function handleFileSelected(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -108,6 +97,80 @@ export function DocumentsPanel({ applicationId, initial }: DocumentsPanelProps) 
       toast.error(error instanceof Error ? error.message : "Failed to upload document")
     } finally {
       setUploading(false)
+    }
+  }
+
+  function toggleGroup(rootId: string) {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(rootId)) {
+        next.delete(rootId)
+      } else {
+        next.add(rootId)
+      }
+      return next
+    })
+  }
+
+  function handleAddVersion(rootId: string) {
+    versionInputRef.current?.click()
+    setAddingVersionTo(rootId)
+  }
+
+  async function handleVersionFileSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    // Reset so picking the same file again re-triggers `onChange`.
+    event.target.value = ""
+    if (!file || !addingVersionTo) return
+
+    setUploading(true)
+    let createdId: string | null = null
+    try {
+      const result = await createDocumentRevision({
+        rootId: addingVersionTo,
+        name: file.name,
+        mime_type: file.type || "application/octet-stream",
+        size_bytes: file.size,
+      })
+      if (!result.ok || !result.document) {
+        toast.error(result.error ?? "Failed to create revision")
+        return
+      }
+
+      const created = result.document
+      createdId = created.id
+
+      // Upload the bytes straight to the backend-provided URL. In local mode
+      // this is a multipart POST to `/documents/{id}/upload`; the API client
+      // (server-side only) is intentionally not used here.
+      if (created.upload_url) {
+        const token = await getToken()
+        const uploadRes = await fetch(resolveUploadUrl(created.upload_url), {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          body: buildUploadBody(file),
+        })
+        if (!uploadRes.ok) {
+          const detail = await uploadRes.text().catch(() => "")
+          throw new Error(
+            `Upload failed: ${uploadRes.status} ${uploadRes.statusText}${
+              detail ? ` — ${detail}` : ""
+            }`,
+          )
+        }
+      }
+
+      setDocuments((prev) => [...prev, created])
+      toast.success("New version added")
+    } catch (error) {
+      // Best-effort cleanup of orphaned metadata when the byte upload fails.
+      if (createdId) {
+        await deleteDocument(createdId, applicationId).catch(() => {})
+      }
+      toast.error(error instanceof Error ? error.message : "Failed to add version")
+    } finally {
+      setUploading(false)
+      setAddingVersionTo(null)
     }
   }
 
@@ -173,93 +236,128 @@ export function DocumentsPanel({ applicationId, initial }: DocumentsPanelProps) 
           />
         </div>
 
-        {documents.length === 0 ? (
+        {groups.length === 0 ? (
           <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
             No documents yet. Upload a resume or cover letter to get started.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Added</TableHead>
-                  <TableHead className="w-[72px] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {documents.map((doc) => (
-                  <TableRow key={doc.id}>
-                    <TableCell className="font-medium">
-                      <span className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span className="truncate">{doc.name}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <DocumentTypeBadge type={doc.type} />
-                    </TableCell>
-                    <TableCell>{formatBytes(doc.size_bytes)}</TableCell>
-                    <TableCell>{formatDate(doc.created_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(doc.id)}
-                        disabled={deletingId === doc.id || uploading}
-                      >
-                        {deletingId === doc.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                        <span className="sr-only">Delete {doc.name}</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="space-y-2">
+            {groups.map((group) => (
+              <GroupRow
+                key={group.rootId}
+                group={group}
+                isExpanded={expandedGroups.has(group.rootId)}
+                onToggle={() => toggleGroup(group.rootId)}
+                onAddVersion={() => handleAddVersion(group.rootId)}
+                onDelete={handleDelete}
+                deletingId={deletingId}
+                uploading={uploading}
+              />
+            ))}
           </div>
         )}
       </CardContent>
+      <input
+        ref={versionInputRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.doc,.docx,.txt,.md,.rtf"
+        onChange={handleVersionFileSelected}
+      />
     </Card>
   )
 }
 
-function DocumentTypeBadge({ type }: { type: DocumentType }) {
-  switch (type) {
-    case "resume":
-      return <Badge>Resume</Badge>
-    case "cover_letter":
-      return (
-        <Badge className="border-blue-500/30 bg-blue-500/10 text-blue-700 dark:border-blue-400/30 dark:text-blue-300">
-          Cover letter
-        </Badge>
-      )
-    case "certificate":
-      return (
-        <Badge className="border-purple-500/30 bg-purple-500/10 text-purple-700 dark:border-purple-400/30 dark:text-purple-300">
-          Certificate
-        </Badge>
-      )
-    case "reference":
-      return (
-        <Badge className="border-orange-500/30 bg-orange-500/10 text-orange-700 dark:border-orange-400/30 dark:text-orange-300">
-          Reference
-        </Badge>
-      )
-    case "visa":
-      return (
-        <Badge className="border-pink-500/30 bg-pink-500/10 text-pink-700 dark:border-pink-400/30 dark:text-pink-300">
-          Visa
-        </Badge>
-      )
-    case "other":
-      return <Badge variant="outline">Other</Badge>
-  }
+function GroupRow({
+  group,
+  isExpanded,
+  onToggle,
+  onAddVersion,
+  onDelete,
+  deletingId,
+  uploading,
+}: {
+  group: DocumentGroup
+  isExpanded: boolean
+  onToggle: () => void
+  onAddVersion: () => void
+  onDelete: (id: string) => void
+  deletingId: string | null
+  uploading: boolean
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border">
+      <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-3">
+        <button
+          onClick={onToggle}
+          className="flex flex-1 items-center gap-3 text-left"
+          aria-expanded={isExpanded}
+        >
+          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="flex-1 font-medium">{group.latest.name}</span>
+          <span className="text-sm text-muted-foreground">v{group.latest.version ?? 1}</span>
+          <Badge variant="secondary">
+            {group.count} {group.count === 1 ? "version" : "versions"}
+          </Badge>
+        </button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onAddVersion} disabled={uploading}>
+            <Upload className="h-3 w-3 mr-1" />
+            Add version
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete(group.latest.id)}
+            disabled={deletingId === group.latest.id || uploading}
+          >
+            {deletingId === group.latest.id ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            <span className="sr-only">Delete {group.latest.name}</span>
+          </Button>
+        </div>
+      </div>
+      {isExpanded && (
+        <div className="divide-y">
+          {group.revisions.map((doc) => (
+            <div key={doc.id} className="flex items-center justify-between px-4 py-2 text-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-4" />
+                <span className="text-muted-foreground">v{doc.version ?? 1}</span>
+                <span>{doc.name}</span>
+                {doc.version_label && (
+                  <Badge variant="outline" className="text-xs">
+                    {doc.version_label}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-muted-foreground">
+                <span>{formatBytes(doc.size_bytes)}</span>
+                <span>{formatDate(doc.created_at)}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onDelete(doc.id)}
+                  disabled={deletingId === doc.id || uploading}
+                  className="h-6 w-6"
+                >
+                  {deletingId === doc.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                  <span className="sr-only">Delete version {doc.version ?? 1}</span>
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 /** Build the multipart body for a local-mode document upload. */

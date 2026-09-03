@@ -72,7 +72,7 @@ export default async function ApplicationDetailPage({ params }: PageProps) {
       // empty timeline events is fine
     }
     try {
-      const result = await listDocuments({ applicationId: id })
+      const result = await listDocuments({ applicationId: id, includeRevisions: true })
       documents = result?.items ?? []
     } catch {
       // empty documents panel is fine
