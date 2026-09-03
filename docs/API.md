@@ -796,11 +796,13 @@ Free-form rich-text notes attachable to an application or a contact (at least on
 
 Documents store **metadata only** in the CareerOS database; the file bytes live in **Firebase Storage**. Creating a document returns a **signed upload URL**; the client `PUT`s the bytes to Firebase directly. Deleting a document removes the metadata row and the Firebase object.
 
+Documents support **versioning**: a root document may have revisions (`parent_document_id` points at the root). Each group has exactly one row with `is_latest_version = true`. Deleting the latest revision promotes its predecessor; deleting a root cascades to its revisions.
+
 #### GET /documents
 
-**Purpose:** List documents.
+**Purpose:** List documents. Grouped by default: one row per logical document (the newest row of each group) with `revisions_count` populated.
 
-**Query params:** `limit`, `cursor`, `application_id`, `type` (see `document_type` enum).
+**Query params:** `limit`, `cursor`, `application_id`, `type` (see `document_type` enum), `include_revisions` (`true` returns every row flat, no counts).
 
 **Response `200`:**
 
@@ -814,7 +816,12 @@ Documents store **metadata only** in the CareerOS database; the file bytes live 
       "name": "resume_stripe_payments_v2.pdf",
       "mime_type": "application/pdf",
       "size_bytes": 184320,
-      "storage_uri": "gs://careeros-docs/users/6b9a0f3a-.../70a1b2c3-...pdf",
+      "firebase_path": "gs://careeros-docs/users/6b9a0f3a-.../70a1b2c3-...pdf",
+      "version": 2,
+      "parent_document_id": "60a1b2c3-d4e5-6789-0123-456789abcd30",
+      "version_label": "v2 — Stripe focus",
+      "is_latest_version": true,
+      "revisions_count": 2,
       "created_at": "2026-07-03T11:00:00Z",
       "updated_at": "2026-07-03T11:00:00Z"
     }
@@ -835,7 +842,8 @@ Documents store **metadata only** in the CareerOS database; the file bytes live 
   "type": "resume",
   "name": "resume_stripe_payments_v2.pdf",
   "mime_type": "application/pdf",
-  "size_bytes": 184320
+  "size_bytes": 184320,
+  "version_label": "v2 — Stripe focus"
 }
 ```
 
@@ -849,7 +857,7 @@ Documents store **metadata only** in the CareerOS database; the file bytes live 
   "name": "resume_stripe_payments_v2.pdf",
   "mime_type": "application/pdf",
   "size_bytes": 184320,
-  "storage_uri": "gs://careeros-docs/users/6b9a0f3a-.../70a1b2c3-...pdf",
+  "firebase_path": "gs://careeros-docs/users/6b9a0f3a-.../70a1b2c3-...pdf",
   "upload_url": "https://storage.googleapis.com/careeros-docs/users/6b9a0f3a-.../70a1b2c3-...pdf?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=...&X-Goog-Date=20260708T130000Z&X-Goog-Expires=900&X-Goog-Signature=...",
   "upload_method": "PUT",
   "upload_headers": { "Content-Type": "application/pdf" },
@@ -861,13 +869,40 @@ Documents store **metadata only** in the CareerOS database; the file bytes live 
 
 The client uploads the bytes by `PUT`ing them to `upload_url` with `upload_headers` before `expires_at` (15-minute TTL).
 
+#### POST /documents/{id}/revisions
+
+**Purpose:** Create a revision of a caller-owned **root** document and return an upload target. `type` and `application_id` are inherited from the root; `version` is assigned automatically.
+
+**Errors:** `404` if `{id}` is not found (or belongs to another user); `409` if `{id}` is itself a revision.
+
+**Request:**
+
+```json
+{
+  "name": "resume_stripe_payments_v3.pdf",
+  "mime_type": "application/pdf",
+  "size_bytes": 190204,
+  "version_label": "v3 — quantified impact"
+}
+```
+
+**Response `201`:** same shape as `POST /documents` (includes `upload_url`).
+
+#### GET /documents/{id}/revisions
+
+**Purpose:** List a document group's revision history (root + revisions, oldest first).
+
+**Errors:** `404` if `{id}` is not found; `409` if `{id}` is not a root document.
+
+**Response `200`:** array of document objects ordered by `version` ascending.
+
 #### GET /documents/{id}
 
 **Response `200`:** a single document object (same shape as items above; no `upload_url`, since the upload is complete).
 
 #### DELETE /documents/{id}
 
-**Purpose:** Delete the document metadata row **and** the underlying Firebase Storage object.
+**Purpose:** Delete a document row **and** its underlying storage object. Deleting the latest revision promotes the previous one to latest. Deleting a root cascades to its revisions (storage objects included).
 
 **Response:** `204 No Content`.
 
@@ -1050,7 +1085,7 @@ Read-only analytics computed from the user's own data.
 | `application_source` | `linkedin`, `referral`, `company_site`, `agency`, `other` | `applications.source` |
 | `contact_role` | `recruiter`, `hiring_manager`, `interviewer`, `referral`, `other` | `contacts.role` |
 | `interview_type` | `phone_screen`, `video_call`, `onsite`, `take_home`, `technical`, `final` | `interviews.type` |
-| `document_type` | `resume`, `cover_letter`, `offer_letter`, `other` | `documents.type` |
+| `document_type` | `resume`, `cover_letter`, `certificate`, `reference`, `visa`, `other` | `documents.type` |
 | `company_size` | `1-10`, `11-50`, `51-100`, `101-500`, `501-1000`, `1001-5000`, `5001-10000`, `10000+` | `companies.size` |
 | `analytics_granularity` | `day`, `week` | `GET /analytics/over-time` `granularity` param |
 
