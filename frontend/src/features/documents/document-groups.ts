@@ -18,12 +18,10 @@ export type DocumentGroup = {
  * their own rootId so nothing silently disappears.
  */
 export function groupDocuments(documents: Document[]): DocumentGroup[] {
-  const roots = new Map<string, Document>()
   const byRoot = new Map<string, Document[]>()
 
   for (const doc of documents) {
     const rootId = doc.parent_document_id ?? doc.id
-    if (!doc.parent_document_id) roots.set(doc.id, doc)
     const list = byRoot.get(rootId)
     if (list) {
       list.push(doc)

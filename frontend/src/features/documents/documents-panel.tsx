@@ -19,6 +19,7 @@ import {
 
 import { createDocumentMetadata, createDocumentRevision, deleteDocument } from "./actions"
 import { DOCUMENT_TYPE_OPTIONS, groupDocuments, type DocumentGroup } from "./document-groups"
+import { buildUploadBody, resolveUploadUrl } from "./upload"
 
 type DocumentsPanelProps = {
   applicationId: string
@@ -179,7 +180,12 @@ export function DocumentsPanel({ applicationId, initial }: DocumentsPanelProps) 
     try {
       const result = await deleteDocument(id, applicationId)
       if (result.ok) {
-        setDocuments((prev) => prev.filter((doc) => doc.id !== id))
+        // Root deletion cascades server-side; drop the whole group so orphan
+        // revision rows don't re-group client-side under a phantom root.
+        const rootId = documents.find((doc) => doc.id === id)?.parent_document_id ?? id
+        setDocuments((prev) =>
+          prev.filter((doc) => doc.id !== id && (doc.parent_document_id ?? doc.id) !== rootId),
+        )
         toast.success("Document deleted")
       } else {
         toast.error(result.error ?? "Failed to delete document")
@@ -358,24 +364,6 @@ function GroupRow({
       )}
     </div>
   )
-}
-
-/** Build the multipart body for a local-mode document upload. */
-function buildUploadBody(file: File): FormData {
-  const formData = new FormData()
-  formData.append("file", file)
-  return formData
-}
-
-/**
- * Resolve a backend-provided upload URL. Absolute URLs (signed storage URLs or
- * fully-qualified backend paths) are used verbatim; relative paths (local-mode
- * endpoints like `/documents/{id}/upload`) are prefixed with the public API base.
- */
-function resolveUploadUrl(uploadUrl: string): string {
-  if (/^https?:\/\//i.test(uploadUrl)) return uploadUrl
-  const base = process.env.NEXT_PUBLIC_API_URL ?? ""
-  return `${base}${uploadUrl.startsWith("/") ? "" : "/"}${uploadUrl}`
 }
 
 function formatBytes(bytes: number | null | undefined): string {

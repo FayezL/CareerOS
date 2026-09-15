@@ -8,6 +8,7 @@ import { toast } from "sonner"
 
 import type { Document, DocumentType } from "@/types"
 import { DOCUMENT_TYPE_OPTIONS, documentTypeLabel } from "./document-groups"
+import { buildUploadBody, resolveUploadUrl } from "./upload"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -60,19 +61,21 @@ export function DocumentManager({ initial, nextCursor, initialType }: DocumentMa
     const rootId = doc.parent_document_id ?? doc.id
     const newExpanded = new Set(expandedGroups)
 
-    if (newExpanded.has(rootId)) {
-      newExpanded.delete(rootId)
-    } else {
+    if (!newExpanded.has(rootId)) {
       newExpanded.add(rootId)
       if (!revisionsCache.has(rootId)) {
         try {
           const token = await getToken()
-          const revisions = await fetch(
+          const res = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/documents/${rootId}/revisions`,
             {
               headers: token ? { Authorization: `Bearer ${token}` } : {},
             },
-          ).then((res) => res.json())
+          )
+          if (!res.ok) {
+            throw new Error(`Failed to load revisions (${res.status})`)
+          }
+          const revisions: Document[] = await res.json()
           setRevisionsCache((prev) => new Map(prev).set(rootId, revisions))
         } catch {
           toast.error("Failed to load revisions")
@@ -93,12 +96,13 @@ export function DocumentManager({ initial, nextCursor, initialType }: DocumentMa
       if (activeType) params.set("type", activeType)
       if (currentCursor) params.set("cursor", currentCursor)
 
-      const page = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/documents?${params.toString()}`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        },
-      ).then((res) => res.json())
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/documents?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) {
+        throw new Error(`Failed to load more documents (${res.status})`)
+      }
+      const page = await res.json()
       setDocuments((prev) => [...prev, ...page.items])
       setCurrentCursor(page.next_cursor)
     } catch {
@@ -222,7 +226,22 @@ export function DocumentManager({ initial, nextCursor, initialType }: DocumentMa
         }
       }
 
-      router.refresh()
+      // Replace the group's representative with the new revision and drop the
+      // cached revision list so the next expand refetches it. (router.refresh()
+      // alone would not re-initialize this component's state.)
+      const createdWithCount: Document = {
+        ...created,
+        revisions_count: (doc.revisions_count ?? 1) + 1,
+      }
+      setDocuments((prev) => [
+        createdWithCount,
+        ...prev.filter((d) => (d.parent_document_id ?? d.id) !== rootId),
+      ])
+      setRevisionsCache((prev) => {
+        const next = new Map(prev)
+        next.delete(rootId)
+        return next
+      })
       toast.success("New version added")
     } catch (error) {
       if (createdId) {
@@ -313,13 +332,12 @@ export function DocumentManager({ initial, nextCursor, initialType }: DocumentMa
         </Dialog>
       </div>
 
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Document types">
+      <div className="flex flex-wrap gap-2" aria-label="Filter by document type">
         <button
           type="button"
-          role="tab"
-          aria-selected={!activeType}
+          aria-pressed={!activeType}
           onClick={() => handleTypeFilter(undefined)}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
             !activeType
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -331,10 +349,9 @@ export function DocumentManager({ initial, nextCursor, initialType }: DocumentMa
           <button
             key={option.value}
             type="button"
-            role="tab"
-            aria-selected={activeType === option.value}
+            aria-pressed={activeType === option.value}
             onClick={() => handleTypeFilter(option.value)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
               activeType === option.value
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -468,16 +485,4 @@ export function DocumentManager({ initial, nextCursor, initialType }: DocumentMa
       )}
     </div>
   )
-}
-
-function buildUploadBody(file: File): FormData {
-  const formData = new FormData()
-  formData.append("file", file)
-  return formData
-}
-
-function resolveUploadUrl(uploadUrl: string): string {
-  if (/^https?:\/\//i.test(uploadUrl)) return uploadUrl
-  const base = process.env.NEXT_PUBLIC_API_URL ?? ""
-  return `${base}${uploadUrl.startsWith("/") ? "" : "/"}${uploadUrl}`
 }
