@@ -210,25 +210,68 @@ async def test_grouped_list_returns_one_row_per_group(
     headers = auth()
     root_a = await _create_root(client, headers, name="a.pdf")
     root_b = await _create_root(client, headers, doc_type="cover_letter", name="b.pdf")
-    await _add_revision(client, headers, root_a)
+    revision_id = (await _add_revision(client, headers, root_a)).json()["id"]
 
     listed = await client.get("/api/v1/documents", headers=headers)
     assert listed.status_code == 200, listed.text
     page = listed.json()
-    by_id = {item["id"]: item for item in page["items"]}
     assert len(page["items"]) == 2
-    assert by_id.keys() != {root_a, root_b} or by_id[root_a]["is_latest_version"] is False
-    reps = {item["parent_document_id"] or item["id"] for item in page["items"]}
-    assert reps == {root_a, root_b}
-    counts = {
-        item["parent_document_id"] or item["id"]: item["revisions_count"] for item in page["items"]
-    }
+    # The representative of root_a's group is its NEWEST row (the revision),
+    # not the demoted root.
+    reps = {item["parent_document_id"] or item["id"]: item for item in page["items"]}
+    assert reps[root_a]["id"] == revision_id
+    assert reps[root_a]["is_latest_version"] is True
+    assert reps[root_b]["id"] == root_b
+    counts = {key: item["revisions_count"] for key, item in reps.items()}
     assert counts[root_a] == 2
     assert counts[root_b] == 1
 
     flat = (await client.get("/api/v1/documents?include_revisions=true", headers=headers)).json()
     assert len(flat["items"]) == 3
     assert all(item["revisions_count"] is None for item in flat["items"])
+
+
+async def test_grouped_list_paginates_with_cursor(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    headers = auth()
+    root_a = await _create_root(client, headers, name="a.pdf")
+    root_b = await _create_root(client, headers, doc_type="cover_letter", name="b.pdf")
+    await _add_revision(client, headers, root_a)  # a's group is now newest
+
+    first = await client.get("/api/v1/documents?limit=1", headers=headers)
+    assert first.status_code == 200, first.text
+    page_one = first.json()
+    assert len(page_one["items"]) == 1
+    assert page_one["items"][0]["parent_document_id"] == root_a  # newest group first
+    assert page_one["next_cursor"] is not None
+
+    second = await client.get(
+        f"/api/v1/documents?limit=1&cursor={page_one['next_cursor']}",
+        headers=headers,
+    )
+    assert second.status_code == 200, second.text
+    page_two = second.json()
+    assert len(page_two["items"]) == 1
+    assert page_two["items"][0]["id"] == root_b
+    assert page_two["next_cursor"] is None
+
+
+async def test_create_persists_version_label(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    response = await client.post(
+        "/api/v1/documents",
+        headers=auth(),
+        json={
+            "type": "resume",
+            "name": "cv.pdf",
+            "mime_type": "application/pdf",
+            "version_label": "v1 — initial",
+        },
+    )
+    assert response.status_code == 201, response.text
+    assert response.json()["version_label"] == "v1 — initial"
 
 
 async def test_type_filter_with_new_types(

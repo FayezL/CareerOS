@@ -73,6 +73,7 @@ class DocumentRepository(BaseRepository[Document]):
             name=data.name,
             mime_type=data.mime_type,
             size_bytes=data.size_bytes,
+            version_label=data.version_label,
             firebase_path=firebase_path,
             **kwargs,
         )
@@ -142,7 +143,7 @@ class DocumentRepository(BaseRepository[Document]):
 
         counts: dict[uuid.UUID, int] = {}
         if rows:
-            keys = [self._root_id_of(r) for r in rows]
+            keys = [self.root_id_of(r) for r in rows]
             count_stmt = (
                 select(group_key, sa.func.count().label("cnt"))
                 .where(Document.user_id == user_id, group_key.in_(keys))
@@ -154,7 +155,7 @@ class DocumentRepository(BaseRepository[Document]):
         return rows, next_cursor, counts
 
     @staticmethod
-    def _root_id_of(document: Document) -> uuid.UUID:
+    def root_id_of(document: Document) -> uuid.UUID:
         return document.parent_document_id or document.id
 
     async def list_revisions(self, user_id: uuid.UUID, root_id: uuid.UUID) -> Sequence[Document]:

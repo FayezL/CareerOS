@@ -33,6 +33,13 @@ class Document(UUIDPrimaryKey, TimestampMixin, Base):
 
     __tablename__ = "documents"
     __table_args__ = (
+        # Backs the unfiltered flat/grouped keyset scans (no `type` predicate).
+        Index(
+            "ix_documents_user_id_created_at_id",
+            "user_id",
+            text("created_at DESC"),
+            text("id DESC"),
+        ),
         Index(
             "ix_documents_user_type_created_at",
             "user_id",

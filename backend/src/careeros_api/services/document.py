@@ -62,7 +62,7 @@ async def list_documents(
     items: list[DocumentRead] = []
     for d in rows:
         doc_read = DocumentRead.model_validate(d)
-        doc_read.revisions_count = counts.get(repo._root_id_of(d), 1)
+        doc_read.revisions_count = counts.get(repo.root_id_of(d), 1)
         items.append(doc_read)
     return PageOut(items=items, next_cursor=next_cursor)
 
