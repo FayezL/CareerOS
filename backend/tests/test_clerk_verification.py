@@ -93,7 +93,8 @@ async def test_verify_expired_token(
 ) -> None:
     private_key, public_key = keypair
     patch_jwks(public_jwks(public_key))  # type: ignore[operator]
-    token = make_token(private_key, expires_in=timedelta(seconds=-10))
+    # Well beyond the verifier's clock-skew leeway so the test is unambiguous.
+    token = make_token(private_key, expires_in=timedelta(seconds=-60))
 
     with pytest.raises(AuthError):
         await verify_clerk_jwt(token)

@@ -21,6 +21,9 @@ from careeros_api.core.config import settings
 from careeros_api.core.security.errors import AuthError
 
 _JWKS_TTL_SECONDS: float = 3600.0
+
+# Verification leeway (seconds) absorbing clock skew between Clerk and this API.
+_CLOCK_SKEW_LEEWAY_SECONDS: float = 10.0
 _JWKSCacheValue = tuple[dict[str, Any], float]
 
 # Issuer -> (jwks payload, monotonic timestamp of last fetch).
@@ -114,6 +117,9 @@ async def verify_clerk_jwt(token: str) -> CurrentUser:
             algorithms=["RS256"],
             issuer=settings.CLERK_ISSUER,
             options={"require": ["exp", "iss", "sub"]},
+            # Small leeway so honest tokens survive clock skew between Clerk
+            # and this API (both exp and iat/nbf checks).
+            leeway=_CLOCK_SKEW_LEEWAY_SECONDS,
         )
     except jwt.PyJWTError as exc:
         raise AuthError("Token failed verification") from exc
