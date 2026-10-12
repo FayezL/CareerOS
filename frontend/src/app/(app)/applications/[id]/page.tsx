@@ -72,7 +72,13 @@ export default async function ApplicationDetailPage({ params }: PageProps) {
       // empty timeline events is fine
     }
     try {
-      const result = await listDocuments({ applicationId: id, includeRevisions: true })
+      // Flat fetch (every revision row); the backend caps `limit` at 100,
+      // which is ample for one application's document set in v1.
+      const result = await listDocuments({
+        applicationId: id,
+        includeRevisions: true,
+        limit: 100,
+      })
       documents = result?.items ?? []
     } catch {
       // empty documents panel is fine

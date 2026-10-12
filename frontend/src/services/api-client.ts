@@ -198,12 +198,14 @@ export async function listDocuments(params?: {
   type?: DocumentType
   cursor?: string
   includeRevisions?: boolean
+  limit?: number
 }): Promise<PageOut<Document>> {
   const qs = new URLSearchParams()
   if (params?.applicationId) qs.set("application_id", params.applicationId)
   if (params?.type) qs.set("type", params.type)
   if (params?.cursor) qs.set("cursor", params.cursor)
   if (params?.includeRevisions) qs.set("include_revisions", "true")
+  if (params?.limit) qs.set("limit", String(params.limit))
   const suffix = qs.size > 0 ? `?${qs.toString()}` : ""
   return apiFetch<PageOut<Document>>(`/documents${suffix}`)
 }
