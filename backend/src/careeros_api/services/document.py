@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 
 import sqlalchemy as sa
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from careeros_api.core.storage import StorageClient, UploadTarget
@@ -166,7 +167,12 @@ async def create_document_revision(
         .values(is_latest_version=False)
     )
     session.add(revision)
-    await session.flush()
+    try:
+        await session.flush()
+    except IntegrityError as exc:
+        # Concurrent revision create won the (group, version) unique index
+        # race; the session rollback undoes the demotion above atomically.
+        raise ConflictError("A revision was created concurrently; please retry") from exc
     await session.refresh(revision)
     return document_with_target(revision, target)
 

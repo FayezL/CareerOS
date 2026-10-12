@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapper
 
 from careeros_api.db.base import Base
+from careeros_api.errors import InvalidCursorError
 from careeros_api.models.user import User
 
 FilterBuilder = Callable[[], Sequence[ColumnExpressionArgument[bool]]]
@@ -29,7 +30,8 @@ def decode_cursor(cursor: str) -> tuple[datetime, uuid.UUID]:
     """Inverse of :func:`encode_cursor`.
 
     Raises:
-        ValueError: If the cursor cannot be decoded into a timestamp and UUID.
+        InvalidCursorError: If the cursor cannot be decoded into a timestamp
+            and UUID (surfaces to clients as 422, not 500).
     """
     padding = "=" * (-len(cursor) % 4)
     try:
@@ -37,7 +39,7 @@ def decode_cursor(cursor: str) -> tuple[datetime, uuid.UUID]:
         created_at_str, entity_id_str = raw.rsplit("|", 1)
         return datetime.fromisoformat(created_at_str), uuid.UUID(entity_id_str)
     except (ValueError, UnicodeDecodeError) as exc:
-        raise ValueError("Invalid cursor") from exc
+        raise InvalidCursorError("Invalid cursor") from exc
 
 
 class BaseRepository[ModelT: Base]:

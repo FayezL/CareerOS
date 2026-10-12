@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+import pytest
 from httpx import AsyncClient
 
 from tests.helpers import AuthHeaders
@@ -371,3 +372,56 @@ async def test_version_index_rejects_duplicate(
                     is_latest_version=False,
                 )
             )
+
+
+async def test_malformed_cursor_returns_422(
+    client: AsyncClient, auth: AuthHeaders, require_db: None
+) -> None:
+    listed = await client.get("/api/v1/documents?cursor=garbage", headers=auth())
+    assert listed.status_code == 422
+
+
+async def test_concurrent_revision_collision_returns_409(
+    client: AsyncClient,
+    auth: AuthHeaders,
+    require_db: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A (group, version) unique-index collision surfaces as 409, not 500.
+
+    The race is simulated by making ``next_version`` return a stale number
+    (2), as if a concurrent request had already claimed that version.
+    """
+    import sqlalchemy as sa
+
+    from careeros_api.db.session import engine
+    from careeros_api.models.document import Document
+    from careeros_api.repositories.document import DocumentRepository
+
+    headers = auth()
+    root_id = await _create_root(client, headers)
+    owner_id = (await client.get("/api/v1/me", headers=headers)).json()["id"]
+
+    # The "other request" claims version 2 out-of-band (not latest, so the
+    # one-latest-per-group partial index is untouched).
+    async with engine.begin() as conn:
+        await conn.execute(
+            sa.insert(Document).values(
+                user_id=owner_id,
+                application_id=None,
+                type="resume",
+                name="race-winner.pdf",
+                firebase_path="local/dev/race-winner.pdf",
+                parent_document_id=root_id,
+                version=2,
+                is_latest_version=False,
+            )
+        )
+
+    async def stale_next_version(_self: object, _user_id: object, _root_id: object) -> int:
+        return 2  # stale: sees only the root's version 1
+
+    monkeypatch.setattr(DocumentRepository, "next_version", stale_next_version)
+
+    collided = await _add_revision(client, headers, root_id, name="race-loser.pdf")
+    assert collided.status_code == 409

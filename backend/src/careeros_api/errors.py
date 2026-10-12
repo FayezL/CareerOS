@@ -32,6 +32,10 @@ class ConflictError(Exception):
     """Raised on a uniqueness/state conflict (maps to HTTP 409)."""
 
 
+class InvalidCursorError(Exception):
+    """Raised when a pagination cursor cannot be decoded (maps to HTTP 422)."""
+
+
 def problem(
     status_code: int,
     title: str,
@@ -82,6 +86,14 @@ def register_exception_handlers(app: FastAPI) -> None:
             status.HTTP_409_CONFLICT,
             "Conflict",
             str(exc) or "Request conflicts with current state",
+        )
+
+    @app.exception_handler(InvalidCursorError)
+    async def handle_invalid_cursor_error(_: Request, exc: InvalidCursorError) -> JSONResponse:
+        return problem(
+            422,
+            "Validation Error",
+            str(exc) or "The pagination cursor is malformed.",
         )
 
     @app.exception_handler(RequestValidationError)

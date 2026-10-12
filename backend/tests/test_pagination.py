@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from careeros_api.errors import InvalidCursorError
 from careeros_api.repositories.base import decode_cursor, encode_cursor
 
 
@@ -35,7 +36,7 @@ def test_encoded_cursor_is_url_safe_and_padding_free() -> None:
 
 
 def test_decode_rejects_garbage_cursor() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidCursorError):
         decode_cursor("not-a-valid-cursor!!")
 
 
